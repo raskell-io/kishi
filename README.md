@@ -38,7 +38,9 @@ The network is trained by a reinforcement loop, all in Rust (`tools/`):
    repeats with the stronger player.
 
 Generation 0 is a hand-written evaluation (PeSTO's piece-square tables), which
-exists only to play the first games. `scripts/generation.sh N` runs one
+plays the first games. The app ships it until a network beats it at equal
+time: generation 1 wins by 85 Elo at equal nodes but is about even at equal
+time, being 2.5 times slower per node. `scripts/generation.sh N` runs one
 generation; `nets/LOG.md` records how each one fared.
 
 ## Levels
@@ -49,6 +51,11 @@ from 300 to 12 centipawns). Level 1 blunders freely; level 6 rarely does. Level 
 thinks for 0.8 s a move and level 8 for 2.5 s, at full strength.
 
 ## Build
+
+Live at **https://kishi.raskell.io** (GitHub Pages, built by
+`.github/workflows/pages.yml`). Pages cannot send the cross-origin isolation
+headers the threaded engine needs, so the service worker adds them and the first
+visit reloads once.
 
 ```sh
 make serve          # build web/kishi.wasm (+ kishi-mt.wasm with nightly) and serve on :8647

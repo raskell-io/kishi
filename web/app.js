@@ -450,7 +450,27 @@ function wire() {
   });
 }
 
+/**
+ * Where the host cannot send cross-origin isolation headers, the service worker
+ * adds them; the first visit reloads once so the page comes back isolated.
+ */
+async function isolate() {
+  if (!('serviceWorker' in navigator) || !self.isSecureContext) return true;
+  await navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (self.crossOriginIsolated) return true;
+  let tried = false;
+  try {
+    tried = sessionStorage.getItem('kishi.isolate') === '1';
+    sessionStorage.setItem('kishi.isolate', '1');
+  } catch {}
+  if (tried) return true; // the browser will not isolate: play single-threaded
+  await navigator.serviceWorker.ready;
+  location.reload();
+  return false;
+}
+
 async function main() {
+  if (!(await isolate())) return;
   rules = await loadEngine();
   startWorker();
   wire();
@@ -458,9 +478,6 @@ async function main() {
   if (positionAt(game.moves.length).error) game = { moves: [], sans: [], color: 'w', level: 4, end: null };
   render();
   if (enginesTurn(liveState())) think();
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
   document.body.classList.add('ready');
 }
 

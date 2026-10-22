@@ -14,7 +14,34 @@ use kishi_tools::*;
 use std::time::Instant;
 
 const OUT: usize = 2 * HIDDEN;
-const K: f32 = 400.0;
+/// Centipawns per unit of the sigmoid that turns a score into a win
+/// probability. Fitted to the data, so the network outputs centipawns on the
+/// scale the search's margins assume (see `fit_k`).
+static K: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0x43c8_0000); // 400.0
+
+fn k() -> f32 {
+    f32::from_bits(K.load(std::sync::atomic::Ordering::Relaxed))
+}
+
+/// The K under which the search scores best predict the game results.
+fn fit_k(records: &[Record]) -> f32 {
+    let sample = &records[..records.len().min(1_000_000)];
+    let loss = |k: f32| -> f64 {
+        sample
+            .iter()
+            .map(|r| {
+                let e = sigmoid(r.score as f32 / k) - r.result as f32 / 2.0;
+                (e * e) as f64
+            })
+            .sum()
+    };
+    let (mut lo, mut hi) = (50f32, 2000f32);
+    for _ in 0..60 {
+        let (a, b) = (lo + (hi - lo) / 3.0, hi - (hi - lo) / 3.0);
+        if loss(a) < loss(b) { hi = b } else { lo = a }
+    }
+    (lo + hi) / 2.0
+}
 
 /// Every parameter, flat: w1, b1, w2, b2.
 struct Params(Vec<f32>);
@@ -47,7 +74,7 @@ fn sample(r: &Record, wdl: f32) -> Sample {
     } else {
         (-r.score as f32, 1.0 - r.result as f32 / 2.0)
     };
-    s.target = wdl * result + (1.0 - wdl) * sigmoid(score / K);
+    s.target = wdl * result + (1.0 - wdl) * sigmoid(score / k());
     s
 }
 
@@ -82,12 +109,12 @@ fn run(params: &[f32], samples: &[Sample], grad: Option<&mut [f32]>) -> f64 {
         for i in 0..HIDDEN {
             out += act[0][i] * w2[i] + act[1][i] * w2[HIDDEN + i];
         }
-        let pred = sigmoid(out * SCALE as f32 / K);
+        let pred = sigmoid(out * SCALE as f32 / k());
         let err = pred - s.target;
         loss += (err * err) as f64;
 
         let Some(g) = grad.as_deref_mut() else { continue };
-        let d_out = 2.0 * err * pred * (1.0 - pred) * SCALE as f32 / K;
+        let d_out = 2.0 * err * pred * (1.0 - pred) * SCALE as f32 / k();
         g[B2 + s.bucket] += d_out;
         let (g_head, g_w2) = g.split_at_mut(W2);
         let gw2 = &mut g_w2[s.bucket * OUT..(s.bucket + 1) * OUT];
@@ -146,6 +173,10 @@ fn main() {
     for i in (1..records.len()).rev() {
         records.swap(i, rng.below(i + 1));
     }
+    let fitted: f32 = arg(&args, "--k", 0.0);
+    let fitted = if fitted > 0.0 { fitted } else { fit_k(&records) };
+    K.store(fitted.to_bits(), std::sync::atomic::Ordering::Relaxed);
+    eprintln!("K = {fitted:.0}");
     let n_valid = (records.len() / 100).min(200_000);
     let valid: Vec<Sample> = records[..n_valid].iter().map(|r| sample(r, wdl)).collect();
     let train = &records[n_valid..];
