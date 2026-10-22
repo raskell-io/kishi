@@ -5,27 +5,27 @@
 @font-face { font-family: "Geist Mono"; src: url(../web/fonts/GeistMono-Variable.woff2); font-weight: 100 900; }
 html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
 body {
-  background: #0a0c10;
-  background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background: #0e0f0d;
+  background-image: linear-gradient(rgba(255,255,255,0) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0) 1px, transparent 1px);
   background-size: 40px 40px;
-  color: #c5ccd6; font-family: Geist, sans-serif;
+  color: #cdc7ba; font-family: Geist, sans-serif;
   display: flex; align-items: center; gap: 64px; padding: 0 80px; box-sizing: border-box;
 }
 .left { flex: 1; }
-.lockup { height: 96px; }
-h1 { font-size: 46px; line-height: 1.15; letter-spacing: -0.02em; color: #f0f6fc; margin: 40px 0 0; font-weight: 650; }
-p { font: 22px/1.4 "Geist Mono", monospace; color: #7d8794; margin: 22px 0 0; }
-p b { color: #7ee787; font-weight: 500; }
+.lockup { height: 84px; }
+h1 { font-size: 46px; line-height: 1.15; letter-spacing: -0.02em; color: #ece6d9; margin: 40px 0 0; font-weight: 500; }
+p { font: 22px/1.4 "Geist Mono", monospace; color: #7f7b70; margin: 22px 0 0; }
+p b { color: #d8644a; font-weight: 500; }
 .board { width: 380px; height: 380px; border-radius: 18px; overflow: hidden; flex: none;
-  background: repeating-conic-gradient(#8796ab 0 25%, #dee3ea 0 50%) 0 0 / 25% 25%;
-  box-shadow: 0 0 0 1px #222934, 0 30px 80px rgba(0,0,0,.7); position: relative; }
+  background: repeating-conic-gradient(#a8a293 0 25%, #e2ddd1 0 50%) 0 0 / 25% 25%;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6); position: relative; }
 .board i { position: absolute; width: 12.5%; height: 12.5%; background-size: cover; }
-.board .m { position: absolute; width: 12.5%; height: 12.5%; background: rgba(126,231,135,.45); }
+.board .m { position: absolute; width: 12.5%; height: 12.5%; background: rgba(216,100,74,.34); }
 </style></head><body>
 <div class="left">
   <img class="lockup" src="../docs/brand/kishi-lockup-light.svg" alt="">
   <h1>A chess engine in Rust,<br>running on your device.</h1>
-  <p><b>$</b> wasm · 4 threads · offline · self-play</p>
+  <p>Rust · WebAssembly · on your device · offline</p>
 </div>
 <div class="board" id="b"></div>
 <script>

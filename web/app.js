@@ -17,7 +17,7 @@ let sentAt = 0;
 let engineThreads = 1;
 let engineReady = false;
 let game = loadSaved() ?? { moves: [], sans: [], color: 'w', level: 4, end: null };
-let settings = { showEval: false, sound: true, theme: 'slate', ...load(SETTINGS_KEY) };
+let settings = { showEval: false, sound: true, theme: 'stone', ...load(SETTINGS_KEY) };
 document.documentElement.dataset.board = settings.theme;
 let viewPly = null; // the ply on display while browsing history; null follows the game
 let lastInfo = null;
@@ -87,7 +87,6 @@ function startWorker() {
     if (data.type === 'ready') {
       engineThreads = data.threads;
       engineReady = true;
-      renderEngineStatus();
     }
     if (data.type !== 'bestmove' || data.token !== token) return;
     // Instant replies feel abrupt; give the opponent a moment.
@@ -288,53 +287,40 @@ function formatScore(info) {
   return (s > 0 ? '+' : '') + s.toFixed(1);
 }
 
-const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
-let spin = 0;
-setInterval(() => {
-  if (!thinking) return;
-  spin = (spin + 1) % SPINNER.length;
-  document.querySelectorAll('.spinner').forEach((el) => (el.textContent = SPINNER[spin]));
-}, 80);
-
 function renderPlayer(el, color, isEngine, mat) {
   const captured = mat[color].map((p) => `<i class="mini ${p}"></i>`).join('');
   const lead = color === 'w' ? mat.diff : -mat.diff;
-  const side = color === 'w' ? 'white' : 'black';
-  let avatar, name, meta;
+  let name, meta;
   if (isEngine) {
-    avatar = '<img src="icon.svg" alt="">';
     name = 'Kishi';
-    meta = `lvl ${game.level} · ${LEVEL_NAMES[game.level].toLowerCase()}`;
-    if (thinking) meta = `<span class="live"><span class="spinner">${SPINNER[spin]}</span> thinking</span>`;
+    meta = `level ${game.level}`;
+    if (thinking) meta = '<span class="breath"></span>thinking';
     else if (settings.showEval && lastInfo) {
       meta += ` · <span class="score">${lastInfo.book ? 'book' : `${formatScore(lastInfo)} d${lastInfo.depth}`}</span>`;
     }
   } else {
-    avatar = 'you';
     name = 'You';
-    meta = side;
+    meta = color === 'w' ? 'white' : 'black';
   }
   el.innerHTML = `
-    <div class="who"><span class="avatar">${avatar}</span><span class="names"><span class="name">${name}</span><span class="meta">${meta}</span></span></div>
+    <div class="who"><span class="turn"></span><span class="name">${name}</span><span class="meta">${meta}</span></div>
     <div class="captured">${captured}${lead > 0 ? `<span class="lead">+${lead}</span>` : ''}</div>`;
 }
 
-/** The terminal-style line under the controls: what the engine is and is doing. */
-function renderEngineStatus() {
-  const el = $('#status');
-  const text = $('#status-text');
-  if (!engineReady) {
-    el.className = 'status mono';
-    text.textContent = 'loading engine…';
-    return;
-  }
-  const threads = `${engineThreads} thread${engineThreads > 1 ? 's' : ''}`;
-  el.className = `status mono ok${thinking ? ' busy' : ''}`;
-  if (thinking) text.textContent = `searching · lvl ${game.level} · ${threads}`;
-  else if (lastInfo && !lastInfo.book && lastInfo.nodes) {
+/** The engine section of the menu: what Kishi is, and what its last search did. */
+function renderEngineInfo() {
+  const rows = [
+    ['threads', `${engineThreads}${engineThreads > 1 ? ' (Web Workers, shared memory)' : ''}`],
+    ['build', 'rust → wasm · simd128'],
+    ['eval', 'hand-written (network in training)'],
+    ['hash', '32 MB'],
+  ];
+  if (lastInfo && !lastInfo.book && lastInfo.nodes) {
     const nodes = lastInfo.nodes >= 1e6 ? `${(lastInfo.nodes / 1e6).toFixed(1)}M` : `${Math.round(lastInfo.nodes / 1e3)}k`;
-    text.textContent = `depth ${lastInfo.depth} · ${nodes} nodes · ${lastInfo.ms < 1000 ? `${lastInfo.ms}ms` : `${(lastInfo.ms / 1000).toFixed(1)}s`} · ${threads}`;
-  } else text.textContent = `ready · rust → wasm · simd128 · ${threads}`;
+    const time = lastInfo.ms < 1000 ? `${lastInfo.ms} ms` : `${(lastInfo.ms / 1000).toFixed(1)} s`;
+    rows.push(['last search', `depth ${lastInfo.depth} · ${nodes} nodes · ${time}`]);
+  }
+  $('#engine-info').innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 }
 
 function render(animate = false) {
@@ -370,8 +356,6 @@ function render(animate = false) {
 
   renderMoves(ply);
   renderStatus();
-  renderEngineStatus();
-  $('#ply-count').textContent = game.moves.length ? `${viewPly ?? game.moves.length}/${game.moves.length}` : '';
   $('#takeback').disabled = !game.moves.length;
   $('#resign').disabled = !!game.end || !game.moves.length;
   $('#prev').disabled = ply === 0;
@@ -456,12 +440,17 @@ function wire() {
   $('#rematch').onclick = () => newGame(game.color === 'w' ? 'b' : 'w', game.level);
   $('#again').onclick = openNewGame;
   $('#takeback').onclick = takeback;
-  $('#flip').onclick = () => {
+  // Game actions live in the menu: close it, then act.
+  const fromMenu = (action) => () => {
+    $('#settings-dialog').close();
+    action();
+  };
+  $('#flip').onclick = fromMenu(() => {
     flipped = !flipped;
     render();
-  };
-  $('#resign').onclick = resign;
-  $('#share').onclick = share;
+  });
+  $('#resign').onclick = fromMenu(resign);
+  $('#share').onclick = fromMenu(share);
   $('#prev').onclick = () => goTo((viewPly ?? game.moves.length) - 1);
   $('#next').onclick = () => goTo((viewPly ?? game.moves.length) + 1);
   $('#first').onclick = () => goTo(0);
@@ -470,11 +459,14 @@ function wire() {
     $('#opt-eval').checked = settings.showEval;
     $('#opt-sound').checked = settings.sound;
     document.querySelectorAll('input[name="theme"]').forEach((r) => (r.checked = r.value === settings.theme));
-    $('#engine-info').textContent = `engine: ${engineThreads} thread${engineThreads > 1 ? 's' : ''} · wasm simd128 · 32 MB hash · hand-written eval`;
+    renderEngineInfo();
     $('#settings-dialog').showModal();
   };
+  document.querySelectorAll('input[name="theme"]').forEach((r) => {
+    r.onchange = () => (document.documentElement.dataset.board = r.value);
+  });
   $('#settings-dialog').addEventListener('close', () => {
-    const theme = document.querySelector('input[name="theme"]:checked')?.value ?? 'slate';
+    const theme = document.querySelector('input[name="theme"]:checked')?.value ?? 'stone';
     settings = { showEval: $('#opt-eval').checked, sound: $('#opt-sound').checked, theme };
     document.documentElement.dataset.board = theme;
     save(SETTINGS_KEY, settings);
@@ -493,7 +485,10 @@ function wire() {
     else if (e.key === 'ArrowRight') $('#next').click();
     else if (e.key === 'ArrowUp') goTo(0);
     else if (e.key === 'ArrowDown') goTo(game.moves.length);
-    else if (e.key === 'f') $('#flip').click();
+    else if (e.key === 'f') {
+      flipped = !flipped;
+      render();
+    }
   });
 }
 

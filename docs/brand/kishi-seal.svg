@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Kishi</title>
+  <rect x="0" y="0" width="512" height="512" rx="56" fill="#c8553d"/>
+    <rect x="30" y="30" width="452" height="452" rx="34" fill="none" stroke="#0e0f0d" stroke-width="10" opacity="0.9"/>
+    <g transform="translate(256 262) scale(1.06) translate(-254 -276)">
+      <path d="M176 404 L176 330 C176 300 196 282 226 262 L170 270 C150 272 136 258 142 240 L196 168 L190 120 L232 146 C300 140 360 190 366 270 L372 404 Z" fill="#0e0f0d"/>
+      <circle cx="236" cy="190" r="14" fill="#c8553d"/>
+      <rect x="150" y="404" width="236" height="28" rx="14" fill="#0e0f0d"/>
+    </g>
+</svg>
