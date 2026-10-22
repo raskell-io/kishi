@@ -1,0 +1,18 @@
+[package]
+name = "kishi-engine"
+description = "A chess engine: bitboards, alpha-beta search and an NNUE evaluation trained by self-play"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Exports the C ABI the web page calls. Only for building web/kishi.wasm.
+web = []
+# Helper threads for the web build (Lazy SMP in Web Workers). Needs nightly,
+# build-std and shared memory: see `make build-threads`.
+threads = ["web"]

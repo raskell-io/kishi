@@ -1,0 +1,12 @@
+[package]
+name = "kishi-tools"
+description = "UCI front end, self-play data generation, NNUE training and engine matches for Kishi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+kishi-engine = { path = "../engine" }
