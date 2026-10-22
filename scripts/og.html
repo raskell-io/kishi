@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- The social card, web/og.png: render at 1200x630, e.g. with headless Chrome. -->
+<html><head><meta charset="utf-8"><style>
+@font-face { font-family: Geist; src: url(../web/fonts/Geist-Variable.woff2); font-weight: 100 900; }
+@font-face { font-family: "Geist Mono"; src: url(../web/fonts/GeistMono-Variable.woff2); font-weight: 100 900; }
+html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+body {
+  background: #0a0c10;
+  background-image: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  color: #c5ccd6; font-family: Geist, sans-serif;
+  display: flex; align-items: center; gap: 64px; padding: 0 80px; box-sizing: border-box;
+}
+.left { flex: 1; }
+.lockup { height: 96px; }
+h1 { font-size: 46px; line-height: 1.15; letter-spacing: -0.02em; color: #f0f6fc; margin: 40px 0 0; font-weight: 650; }
+p { font: 22px/1.4 "Geist Mono", monospace; color: #7d8794; margin: 22px 0 0; }
+p b { color: #7ee787; font-weight: 500; }
+.board { width: 380px; height: 380px; border-radius: 18px; overflow: hidden; flex: none;
+  background: repeating-conic-gradient(#8796ab 0 25%, #dee3ea 0 50%) 0 0 / 25% 25%;
+  box-shadow: 0 0 0 1px #222934, 0 30px 80px rgba(0,0,0,.7); position: relative; }
+.board i { position: absolute; width: 12.5%; height: 12.5%; background-size: cover; }
+.board .m { position: absolute; width: 12.5%; height: 12.5%; background: rgba(126,231,135,.45); }
+</style></head><body>
+<div class="left">
+  <img class="lockup" src="../docs/brand/kishi-lockup-light.svg" alt="">
+  <h1>A chess engine in Rust,<br>running on your device.</h1>
+  <p><b>$</b> wasm · 4 threads · offline · self-play</p>
+</div>
+<div class="board" id="b"></div>
+<script>
+// The Italian Game after 4...Nf6, Kishi to move.
+const fen = 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2NP1N2/PPP2PPP/R1BQK2R';
+const b = document.getElementById('b');
+for (const [sq] of [['f6'], ['g8']]) {
+  const m = document.createElement('div'); m.className = 'm';
+  m.style.left = (sq.charCodeAt(0) - 97) * 12.5 + '%'; m.style.top = (8 - sq[1]) * 12.5 + '%'; b.append(m);
+}
+fen.split('/').forEach((row, r) => { let f = 0; for (const c of row) {
+  if (/\d/.test(c)) { f += +c; continue; }
+  const i = document.createElement('i');
+  i.style.backgroundImage = `url(../web/pieces/${c === c.toUpperCase() ? 'w' : 'b'}${c.toUpperCase()}.svg)`;
+  i.style.left = f * 12.5 + '%'; i.style.top = r * 12.5 + '%'; b.append(i); f++; } });
+</script>
+</body></html>

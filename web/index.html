@@ -3,16 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Kishi · chess</title>
-  <meta name="description" content="Play chess against Kishi, an engine trained by self-play that runs entirely on your device.">
-  <meta name="theme-color" content="#161512">
+  <title>Kishi · chess engine in your browser</title>
+  <meta name="description" content="Play chess against Kishi, a Rust chess engine compiled to WebAssembly that runs on your device, multi-threaded and offline.">
+  <meta name="theme-color" content="#0a0c10">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Kishi">
+  <meta property="og:title" content="Kishi">
+  <meta property="og:description" content="A Rust chess engine in WebAssembly. Runs on your device, multi-threaded, offline.">
+  <meta property="og:image" content="https://kishi.raskell.io/og.png">
+  <meta property="og:url" content="https://kishi.raskell.io/">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="modulepreload" href="board.js">
   <link rel="modulepreload" href="engine.js">
   <link rel="preload" href="kishi.wasm" as="fetch" crossorigin>
@@ -20,10 +27,19 @@
 </head>
 <body>
   <header class="bar">
-    <a class="brand" href="./"><img src="icon.svg" alt="" width="26" height="26"><span>Kishi</span><small>騎士</small></a>
-    <button id="settings" class="icon" aria-label="Settings">
-      <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.43-2.53a7.8 7.8 0 0 0 0-1.94l2.11-1.65-2-3.46-2.49 1a7.5 7.5 0 0 0-1.68-.98L15 3.3h-4l-.37 2.64c-.6.25-1.17.58-1.68.98l-2.49-1-2 3.46 2.11 1.65a7.8 7.8 0 0 0 0 1.94l-2.11 1.65 2 3.46 2.49-1c.51.4 1.08.73 1.68.98L11 20.7h4l.37-2.64c.6-.25 1.17-.58 1.68-.98l2.49 1 2-3.46-2.11-1.65Z"/></svg>
-    </button>
+    <a class="brand" href="./" aria-label="Kishi">
+      <img src="icon.svg" alt="" width="28" height="28">
+      <span class="wordmark">kishi<i class="caret" aria-hidden="true"></i></span>
+    </a>
+    <span class="tag">rust → wasm</span>
+    <nav class="bar-actions">
+      <a class="icon" href="https://github.com/raskell-io/kishi" aria-label="Source on GitHub" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.520 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.550-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
+      </a>
+      <button id="settings" class="icon" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      </button>
+    </nav>
   </header>
 
   <main class="app">
@@ -34,11 +50,12 @@
         <div id="promotion" hidden></div>
         <div id="gameover" hidden>
           <div class="card">
+            <div class="result-code mono"></div>
             <div class="headline"></div>
             <div class="reason"></div>
             <div class="actions">
-              <button id="rematch" class="primary">Rematch</button>
-              <button id="again">New game</button>
+              <button id="rematch" class="btn primary">Rematch</button>
+              <button id="again" class="btn">New game</button>
             </div>
           </div>
         </div>
@@ -47,45 +64,63 @@
     </section>
 
     <aside class="side">
-      <div class="moves" id="moves"></div>
-      <nav class="history">
-        <button id="first" class="icon" aria-label="First move"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM19 5v14l-10-7z"/></svg></button>
-        <button id="prev" class="icon" aria-label="Previous move"><svg viewBox="0 0 24 24"><path d="M16 5v14L6 12z"/></svg></button>
-        <button id="next" class="icon" aria-label="Next move"><svg viewBox="0 0 24 24"><path d="M8 5v14l10-7z"/></svg></button>
-        <button id="last" class="icon" aria-label="Last move"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM5 5v14l10-7z"/></svg></button>
-      </nav>
+      <div class="panel">
+        <div class="panel-head mono"><span>moves</span><span id="ply-count" class="muted"></span></div>
+        <div class="moves" id="moves"></div>
+        <nav class="history">
+          <button id="first" class="icon" aria-label="First move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v14M18 6l-7 6 7 6"/></svg></button>
+          <button id="prev" class="icon" aria-label="Previous move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+          <button id="next" class="icon" aria-label="Next move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+          <button id="last" class="icon" aria-label="Last move"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 5v14M6 6l7 6-7 6"/></svg></button>
+        </nav>
+      </div>
       <nav class="controls">
-        <button id="new"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg><span>New</span></button>
-        <button id="takeback"><svg viewBox="0 0 24 24"><path d="M9 7V3L2 10l7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11Z"/></svg><span>Takeback</span></button>
-        <button id="flip"><svg viewBox="0 0 24 24"><path d="M7 4 3 8l4 4V9h11V7H7zM17 12v3H6v2h11v3l4-4z"/></svg><span>Flip</span></button>
-        <button id="resign"><svg viewBox="0 0 24 24"><path d="M5 3h2v18H5zM8 4h11l-2.5 4L19 12H8z"/></svg><span>Resign</span></button>
-        <button id="share"><svg viewBox="0 0 24 24"><path d="M12 3 7.5 7.5l1.4 1.4L11 6.8V15h2V6.8l2.1 2.1 1.4-1.4zM5 12v8h14v-8h-2v6H7v-6z"/></svg><span>PGN</span></button>
+        <button id="new" class="primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>New</span></button>
+        <button id="takeback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Takeback</span></button>
+        <button id="flip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg><span>Flip</span></button>
+        <button id="resign"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>Resign</span></button>
+        <button id="share"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M14 4h6v6M20 4l-9 9"/></svg><span>PGN</span></button>
       </nav>
-      <p class="about">Kishi runs entirely on this device: a Rust engine compiled to WebAssembly. No server, works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
+      <div class="status mono" id="status"><span class="led"></span><span id="status-text">loading engine…</span></div>
     </aside>
   </main>
 
   <dialog id="newgame">
     <form method="dialog">
-      <h2>Play Kishi</h2>
+      <header class="dialog-head">
+        <h2>New game</h2>
+        <button value="cancel" class="icon close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <span class="label mono">strength</span>
       <div class="levels"></div>
+      <span class="label mono">play as</span>
       <div class="colors">
-        <button value="b" aria-label="Play black"><i class="piece bK"></i></button>
-        <button value="random" class="random" aria-label="Random color"><i class="piece wK half"></i><i class="piece bK half"></i></button>
-        <button value="w" aria-label="Play white"><i class="piece wK"></i></button>
+        <button value="w" class="color"><i class="piece wK"></i><span>White</span></button>
+        <button value="random" class="color"><span class="halves"><i class="piece wK half"></i><i class="piece bK half"></i></span><span>Random</span></button>
+        <button value="b" class="color"><i class="piece bK"></i><span>Black</span></button>
       </div>
-      <button value="cancel" class="close" aria-label="Close">×</button>
     </form>
   </dialog>
 
   <dialog id="settings-dialog">
     <form method="dialog">
-      <h2>Settings</h2>
-      <label class="toggle"><input type="checkbox" id="opt-eval"><span>Show Kishi's evaluation</span></label>
-      <label class="toggle"><input type="checkbox" id="opt-sound"><span>Move sounds</span></label>
-      <p class="credits" id="engine-info"></p>
-      <p class="credits">Pieces by Colin M.L. Burnett (GPLv2+). Engine and network: <a href="https://github.com/raskell-io/kishi">raskell-io/kishi</a>.</p>
-      <button value="ok" class="primary">Done</button>
+      <header class="dialog-head">
+        <h2>Settings</h2>
+        <button value="ok" class="icon close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </header>
+      <span class="label mono">board</span>
+      <div class="themes">
+        <label class="theme"><input type="radio" name="theme" value="slate"><span class="swatch slate"></span><span>Slate</span></label>
+        <label class="theme"><input type="radio" name="theme" value="wood"><span class="swatch wood"></span><span>Wood</span></label>
+        <label class="theme"><input type="radio" name="theme" value="green"><span class="swatch green"></span><span>Green</span></label>
+      </div>
+      <label class="toggle"><span>Show Kishi's evaluation</span><input type="checkbox" id="opt-eval"></label>
+      <label class="toggle"><span>Move sounds</span><input type="checkbox" id="opt-sound"></label>
+      <div class="about">
+        <p>Kishi is a chess engine written in Rust and compiled to WebAssembly. It runs on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
+        <p class="mono muted" id="engine-info"></p>
+        <p class="muted">Pieces by Colin M.L. Burnett (GPLv2+). Type: Geist (OFL). Source: <a href="https://github.com/raskell-io/kishi">raskell-io/kishi</a>.</p>
+      </div>
     </form>
   </dialog>
 

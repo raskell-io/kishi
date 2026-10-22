@@ -15,8 +15,10 @@ let token = 0;
 let thinking = false;
 let sentAt = 0;
 let engineThreads = 1;
+let engineReady = false;
 let game = loadSaved() ?? { moves: [], sans: [], color: 'w', level: 4, end: null };
-let settings = { showEval: false, sound: true, ...load(SETTINGS_KEY) };
+let settings = { showEval: false, sound: true, theme: 'slate', ...load(SETTINGS_KEY) };
+document.documentElement.dataset.board = settings.theme;
 let viewPly = null; // the ply on display while browsing history; null follows the game
 let lastInfo = null;
 let flipped = false;
@@ -82,7 +84,11 @@ function click(capture) {
 function startWorker() {
   worker = new Worker(new URL('worker.js', import.meta.url), { type: 'module' });
   worker.onmessage = ({ data }) => {
-    if (data.type === 'ready') engineThreads = data.threads;
+    if (data.type === 'ready') {
+      engineThreads = data.threads;
+      engineReady = true;
+      renderEngineStatus();
+    }
     if (data.type !== 'bestmove' || data.token !== token) return;
     // Instant replies feel abrupt; give the opponent a moment.
     setTimeout(() => {
@@ -282,18 +288,53 @@ function formatScore(info) {
   return (s > 0 ? '+' : '') + s.toFixed(1);
 }
 
+const SPINNER = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
+let spin = 0;
+setInterval(() => {
+  if (!thinking) return;
+  spin = (spin + 1) % SPINNER.length;
+  document.querySelectorAll('.spinner').forEach((el) => (el.textContent = SPINNER[spin]));
+}, 80);
+
 function renderPlayer(el, color, isEngine, mat) {
-  const name = isEngine ? `Kishi <span class="level">level ${game.level} · ${LEVEL_NAMES[game.level]}</span>` : 'You';
   const captured = mat[color].map((p) => `<i class="mini ${p}"></i>`).join('');
   const lead = color === 'w' ? mat.diff : -mat.diff;
-  let extra = '';
-  if (isEngine && thinking) extra = '<span class="thinking"><b></b><b></b><b></b></span>';
-  else if (isEngine && settings.showEval && lastInfo) {
-    extra = `<span class="eval">${lastInfo.book ? 'book' : `${formatScore(lastInfo)} · d${lastInfo.depth}`}</span>`;
+  const side = color === 'w' ? 'white' : 'black';
+  let avatar, name, meta;
+  if (isEngine) {
+    avatar = '<img src="icon.svg" alt="">';
+    name = 'Kishi';
+    meta = `lvl ${game.level} · ${LEVEL_NAMES[game.level].toLowerCase()}`;
+    if (thinking) meta = `<span class="live"><span class="spinner">${SPINNER[spin]}</span> thinking</span>`;
+    else if (settings.showEval && lastInfo) {
+      meta += ` · <span class="score">${lastInfo.book ? 'book' : `${formatScore(lastInfo)} d${lastInfo.depth}`}</span>`;
+    }
+  } else {
+    avatar = 'you';
+    name = 'You';
+    meta = side;
   }
   el.innerHTML = `
-    <div class="who"><span class="dot ${color}"></span><span class="name">${name}</span>${extra}</div>
+    <div class="who"><span class="avatar">${avatar}</span><span class="names"><span class="name">${name}</span><span class="meta">${meta}</span></span></div>
     <div class="captured">${captured}${lead > 0 ? `<span class="lead">+${lead}</span>` : ''}</div>`;
+}
+
+/** The terminal-style line under the controls: what the engine is and is doing. */
+function renderEngineStatus() {
+  const el = $('#status');
+  const text = $('#status-text');
+  if (!engineReady) {
+    el.className = 'status mono';
+    text.textContent = 'loading engine…';
+    return;
+  }
+  const threads = `${engineThreads} thread${engineThreads > 1 ? 's' : ''}`;
+  el.className = `status mono ok${thinking ? ' busy' : ''}`;
+  if (thinking) text.textContent = `searching · lvl ${game.level} · ${threads}`;
+  else if (lastInfo && !lastInfo.book && lastInfo.nodes) {
+    const nodes = lastInfo.nodes >= 1e6 ? `${(lastInfo.nodes / 1e6).toFixed(1)}M` : `${Math.round(lastInfo.nodes / 1e3)}k`;
+    text.textContent = `depth ${lastInfo.depth} · ${nodes} nodes · ${lastInfo.ms < 1000 ? `${lastInfo.ms}ms` : `${(lastInfo.ms / 1000).toFixed(1)}s`} · ${threads}`;
+  } else text.textContent = `ready · rust → wasm · simd128 · ${threads}`;
 }
 
 function render(animate = false) {
@@ -329,6 +370,8 @@ function render(animate = false) {
 
   renderMoves(ply);
   renderStatus();
+  renderEngineStatus();
+  $('#ply-count').textContent = game.moves.length ? `${viewPly ?? game.moves.length}/${game.moves.length}` : '';
   $('#takeback').disabled = !game.moves.length;
   $('#resign').disabled = !!game.end || !game.moves.length;
   $('#prev').disabled = ply === 0;
@@ -375,6 +418,7 @@ function renderStatus() {
   };
   const w = game.end.winner;
   const headline = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
+  over.querySelector('.result-code').textContent = !w ? '½-½' : w === 'w' ? '1-0' : '0-1';
   over.querySelector('.headline').textContent = headline;
   over.querySelector('.reason').textContent = reasons[game.end.reason] ?? '';
   over.hidden = false;
@@ -425,11 +469,14 @@ function wire() {
   $('#settings').onclick = () => {
     $('#opt-eval').checked = settings.showEval;
     $('#opt-sound').checked = settings.sound;
-    $('#engine-info').textContent = `Searching on ${engineThreads} thread${engineThreads > 1 ? 's' : ''} of this device.`;
+    document.querySelectorAll('input[name="theme"]').forEach((r) => (r.checked = r.value === settings.theme));
+    $('#engine-info').textContent = `engine: ${engineThreads} thread${engineThreads > 1 ? 's' : ''} · wasm simd128 · 32 MB hash · hand-written eval`;
     $('#settings-dialog').showModal();
   };
   $('#settings-dialog').addEventListener('close', () => {
-    settings = { showEval: $('#opt-eval').checked, sound: $('#opt-sound').checked };
+    const theme = document.querySelector('input[name="theme"]:checked')?.value ?? 'slate';
+    settings = { showEval: $('#opt-eval').checked, sound: $('#opt-sound').checked, theme };
+    document.documentElement.dataset.board = theme;
     save(SETTINGS_KEY, settings);
     render();
   });

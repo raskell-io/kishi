@@ -1,11 +1,11 @@
 // Offline play: serve the app from the cache, refresh it from the network in the background.
 // Also makes the page cross-origin isolated where the host cannot send the
 // headers itself (GitHub Pages), so the threaded engine can share memory.
-const CACHE = 'kishi-v2';
+const CACHE = 'kishi-v3';
 const SHELL = [
   './', 'index.html', 'style.css', 'app.js', 'board.js', 'engine.js', 'worker.js', 'helper.js',
   'kishi.wasm', 'kishi-mt.wasm',
-  'icon.svg', 'icon-180.png', 'manifest.webmanifest',
+  'icon.svg', 'icon-180.png', 'manifest.webmanifest', 'fonts/Geist-Variable.woff2', 'fonts/GeistMono-Variable.woff2',
   ...['K', 'Q', 'R', 'B', 'N', 'P'].flatMap((p) => [`pieces/w${p}.svg`, `pieces/b${p}.svg`]),
 ];
 
