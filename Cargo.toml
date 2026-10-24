@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["engine", "tools"]
+members = ["engine", "shogi", "tools"]
 
 [workspace.package]
 version = "0.1.0"

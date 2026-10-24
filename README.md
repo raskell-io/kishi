@@ -5,12 +5,13 @@
   </picture>
 </p>
 
-<p align="center"><b>A chess engine in Rust, compiled to WebAssembly, running on your device.</b><br>
-Multi-threaded in the browser, offline once installed, and learning to evaluate positions by playing itself.</p>
+<p align="center"><b>Chess and shogi against engines written in Rust, compiled to WebAssembly, running on your device.</b><br>
+Quiet, offline once installed, and multi-threaded in the browser. Go is next.</p>
 
 <p align="center">
   <a href="https://kishi.raskell.io"><b>Play at kishi.raskell.io</b></a> ·
-  <a href="#how-it-plays">How it plays</a> ·
+  <a href="#how-it-plays">Chess</a> ·
+  <a href="#shogi">Shogi</a> ·
   <a href="#how-it-learns-self-play">How it learns</a> ·
   <a href="#strength">Strength</a> ·
   <a href="#build">Build</a>
@@ -53,6 +54,32 @@ server and no account. On an iPhone, open the site in Safari and choose
   vary their openings from a small book of main lines.
 
 <br clear="right">
+
+## Shogi
+
+Switch games from the menu. The shogi engine (`shogi/`) is its own crate on the
+same plan as the chess one:
+
+- **Rules.** A 9×9 mailbox with both hands; drops, promotion (forced where a
+  piece could never move again), nifu, and the pawn-drop mate ban (uchifuzume),
+  verified by perft against the published counts: 19,861,490 positions at depth
+  5 from the start, and 4,809,015 at depth 3 from the drop-heavy "matsuri" test
+  position.
+- **Search.** Principal variation search with a transposition table (Kishi's
+  own, shared with chess), null-move and reverse futility pruning, late move
+  reductions and pruning, killers and history, captures-only quiescence, and
+  check extensions. About 2.3M nodes a second natively.
+- **Evaluation.** Material, with pieces in hand worth a little more than on the
+  board; king shelter by golds and silvers; pressure from pieces near the
+  enemy king; mobility of bishops and rooks.
+- **Board.** Drawn by Kishi itself: pentagon pieces lettered in the device's
+  Japanese serif, promoted pieces in vermilion, gote's pieces turned to face
+  sente. Pieces in hand sit in each player's row; tap one to drop it. Moves are
+  written in Western notation (P-7f, Bx2b+, S*5e), and a game copies as a
+  numbered record plus the USI line any engine or lishogi loads.
+
+Against Fairy-Stockfish 14 at 0.5 s a move, Kishi's shogi engine scores 20/20
+at skill level 0 and 2/20 at skill level 10.
 
 ## How it learns: self-play
 
@@ -101,7 +128,7 @@ equal time.
 
 ```sh
 make serve          # web/kishi.wasm (+ kishi-mt.wasm with nightly), served on :8647
-make test           # perft, notation, search, SEE and book tests
+make test           # perft (chess and shogi), notation, search, SEE and book tests
 make bench          # native search speed
 ```
 
@@ -114,6 +141,7 @@ The tools, run with `cargo run --release -p kishi-tools --bin <name>`:
 | `train` | trains a network on records, writes `.nnue` |
 | `arena` | two evaluations play paired games, prints the Elo difference |
 | `vs` | Kishi against a UCI engine, such as Stockfish set up like lichess's levels |
+| `shogi-vs` | Kishi's shogi engine against a USI engine (Fairy-Stockfish) |
 
 Every push to `main` tests, builds both engines and deploys the site to GitHub
 Pages (`.github/workflows/pages.yml`). The brand marks, a knight cut into a

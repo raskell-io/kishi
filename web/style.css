@@ -198,7 +198,7 @@ svg { width: 20px; height: 20px; flex: none; }
 .bP { background-image: url(pieces/bP.svg); }
 
 #promotion { position: absolute; inset: 0; z-index: 20; background: rgba(14, 15, 13, 0.6); }
-#promotion button {
+#promotion:not(.shogi) button {
   position: absolute;
   width: 12.5%;
   height: 12.5%;
@@ -209,7 +209,7 @@ svg { width: 20px; height: 20px; flex: none; }
   background-repeat: no-repeat;
   transition: border-radius 0.2s, background-color 0.2s;
 }
-#promotion button:hover { border-radius: 12%; background-color: var(--accent); }
+#promotion:not(.shogi) button:hover { border-radius: 12%; background-color: var(--accent); }
 
 #gameover { position: absolute; inset: 0; z-index: 15; display: grid; place-items: center; pointer-events: none; }
 #gameover .card {
@@ -463,3 +463,105 @@ dialog.overlay form {
   .breath, dialog.overlay[open] { animation: none; }
   .piece.animating { transition: none; }
 }
+
+/* ---- several games ---- */
+
+.game-name { font: 400 13px var(--mono); color: var(--muted); margin-left: -2px; }
+.games { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.game-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(236, 230, 217, 0.05);
+  color: var(--strong);
+  font-size: 15px;
+  box-shadow: inset 0 0 0 1px transparent;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.game-tile:hover { background: rgba(236, 230, 217, 0.09); }
+.game-tile.on { box-shadow: inset 0 0 0 1px var(--accent); }
+.glyph { width: 34px; height: 34px; display: grid; place-items: center; flex: none; }
+.glyph .piece { position: static; width: 34px; height: 34px; display: block; }
+.glyph .koma-icon { width: 28px; height: 32px; font-size: 17px; }
+
+/* ---- shogi ---- */
+
+/* A koma: a pentagon of pale wood, lettered in the device's Japanese serif. */
+:root {
+  --koma-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M50 0 86 13 100 100H0L14 13Z'/%3E%3C/svg%3E");
+  --koma-face: linear-gradient(170deg, #f4e9cf, #e2cfa8);
+  --koma-ink: #1b1a16;
+  --koma-red: #b8432c;
+  --mincho: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", YuMincho, "Noto Serif JP", "Noto Serif CJK JP", serif;
+}
+.koma, .koma-icon {
+  -webkit-mask: var(--koma-shape) center / 100% 100% no-repeat;
+  mask: var(--koma-shape) center / 100% 100% no-repeat;
+  background: var(--koma-face);
+  color: var(--koma-ink);
+  font-family: var(--mincho);
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  line-height: 1;
+  padding-top: 10%;
+}
+.koma.promoted, .koma-icon.promoted { color: var(--koma-red); }
+.koma.away { transform: rotate(180deg); padding-top: 0; padding-bottom: 10%; }
+.koma-icon { width: 38px; height: 44px; font-size: 22px; }
+.koma-icon.sente::after { content: "玉"; }
+.koma-icon.gote::after { content: "王"; }
+.koma-icon.gote { transform: rotate(180deg); padding-top: 0; padding-bottom: 10%; }
+.color .koma-icon.piece { position: relative; width: 38px; height: 44px; }
+.halves .koma-icon { position: absolute; inset: 1px 4px; width: auto; height: auto; }
+
+.board.shogi {
+  container-type: size;
+  background-color: var(--light-sq);
+  background-image:
+    radial-gradient(circle at 33.333% 33.333%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
+    radial-gradient(circle at 66.667% 33.333%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
+    radial-gradient(circle at 33.333% 66.667%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
+    radial-gradient(circle at 66.667% 66.667%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
+    linear-gradient(to right, var(--shogi-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--shogi-line) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 11.1111% 11.1111%, 11.1111% 11.1111%;
+  box-shadow: inset -1px -1px 0 var(--shogi-line);
+  --shogi-line: color-mix(in srgb, var(--dark-sq) 55%, #1b1a16);
+}
+.board.shogi .square, .board.shogi .piece { width: 11.1111%; height: 11.1111%; }
+.board.shogi .piece { display: grid; place-items: center; filter: drop-shadow(0 0.25cqw 0.25cqw rgba(0, 0, 0, 0.32)); }
+.board.shogi .piece .koma { width: 80%; height: 90%; font-size: 5.4cqw; }
+.board.shogi .piece.dropped { animation: drop 0.24s ease-out; }
+@keyframes drop { from { opacity: 0; scale: 1.15; } }
+.board.shogi .coord { font: 500 clamp(7px, 1.7cqw, 10px)/1 var(--mono); color: var(--shogi-line); opacity: 0.85; }
+.board.shogi .coord.file { top: 2px; bottom: auto; width: 11.1111%; text-align: right; padding-right: 3px; }
+.board.shogi .coord.rank { left: auto; right: 2px; height: 11.1111%; padding-top: 0; display: flex; align-items: flex-end; padding-bottom: 3px; font-family: var(--mincho); }
+.board.shogi .dest { background: radial-gradient(var(--dest) 16%, rgba(0, 0, 0, 0) 17%); }
+
+.hand { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
+.hand-piece { position: relative; width: 30px; height: 34px; padding: 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); }
+.hand-piece:disabled { opacity: 1; cursor: default; }
+.hand-piece .koma { width: 100%; height: 100%; font-size: 17px; }
+.hand-piece sub { position: absolute; right: -5px; bottom: -3px; font: 500 11px var(--mono); color: var(--strong); }
+.hand-piece.on .koma { background: linear-gradient(170deg, #f7d9c9, #e9b49f); }
+.hand-piece:not(:disabled):hover .koma { background: linear-gradient(170deg, #fbf1dc, #ead9b6); }
+
+#promotion.shogi { background: rgba(14, 15, 13, 0.45); }
+.promote-choice { position: absolute; width: 11.1111%; display: flex; flex-direction: column; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)); }
+.promote-choice .koma { width: 100%; aspect-ratio: 1; font-size: 5.4cqw; padding-top: 10%; transition: transform 0.15s; }
+.promote-choice .koma:hover { transform: scale(1.06); }
+#promotion.shogi { container-type: size; }
+
+/* Shogi counts single moves: one per row on the desktop column, a running line on phones. */
+@media (min-width: 860px) {
+  .moves.single .row { grid-template-columns: 36px 1fr; }
+}
+/* The far player's hand faces them, like their pieces on the board. */
+#top .hand-piece .koma { transform: rotate(180deg); padding-top: 0; padding-bottom: 10%; }
+.halves.pair { display: flex; align-items: center; justify-content: center; gap: 3px; width: auto; }
+.halves.pair .piece { position: relative; inset: auto; width: 22px; height: 26px; font-size: 13px; clip-path: none; }
+.halves.pair .koma-icon.gote { transform: rotate(180deg); }

@@ -1,30 +1,32 @@
-// The game: you against Kishi at one of eight levels.
-import { Board, fenPieces } from './board.js';
+// The shell: you against Kishi at one of eight levels, in one of several games.
+// Each game module (games/*.js) supplies its board, how a tap becomes a move,
+// what the player rows show, and how a game is exported.
 import { loadEngine, positionCommand } from './engine.js';
+import chess from './games/chess.js';
+import shogi from './games/shogi.js';
 
+const GAMES = { chess, shogi };
 const LEVEL_NAMES = ['', 'Novice', 'Beginner', 'Casual', 'Intermediate', 'Club', 'Strong', 'Expert', 'Maximum'];
-const PIECE_VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
-const SAVE_KEY = 'kishi.game.v1';
 const SETTINGS_KEY = 'kishi.settings.v1';
+// Chess keeps the key it had before there were other games.
+const saveKey = (id) => (id === 'chess' ? 'kishi.game.v1' : `kishi.game.v1.${id}`);
 
 const $ = (sel) => document.querySelector(sel);
 
-let rules; // the engine on the main thread, for legal moves and notation
+let settings = { showEval: false, sound: true, theme: 'stone', game: 'chess', ...load(SETTINGS_KEY) };
+document.documentElement.dataset.board = settings.theme;
+let G = GAMES[settings.game] ?? chess; // the current game module
+let rules; // that game's engine on the main thread, for legal moves and notation
+let board;
 let worker = null;
 let token = 0;
 let thinking = false;
 let sentAt = 0;
 let engineThreads = 1;
-let engineReady = false;
-let game = loadSaved() ?? { moves: [], sans: [], color: 'w', level: 4, end: null };
-let settings = { showEval: false, sound: true, theme: 'stone', ...load(SETTINGS_KEY) };
-document.documentElement.dataset.board = settings.theme;
+let game; // { moves, sans, color, level, end }
 let viewPly = null; // the ply on display while browsing history; null follows the game
 let lastInfo = null;
 let flipped = false;
-
-const board = new Board($('#board'), onBoardMove);
-board.onInteract = unlockAudio;
 
 function load(key) {
   try {
@@ -40,10 +42,16 @@ function save(key, value) {
   } catch {}
 }
 
-function loadSaved() {
-  const g = load(SAVE_KEY);
-  return g && Array.isArray(g.moves) ? g : null;
+const freshGame = () => ({ moves: [], sans: [], color: G.first, level: 4, end: null });
+const second = () => Object.keys(G.sides).find((s) => s !== G.first);
+const other = (side) => (side === G.first ? second() : G.first);
+
+function loadGame() {
+  const g = load(saveKey(G.id));
+  return g && Array.isArray(g.moves) ? g : freshGame();
 }
+
+const saveGame = () => save(saveKey(G.id), game);
 
 // ---- sound ------------------------------------------------------------------
 
@@ -83,12 +91,11 @@ function click(capture) {
 
 function startWorker() {
   worker = new Worker(new URL('worker.js', import.meta.url), { type: 'module' });
+  worker.postMessage({ type: 'init', wasm: G.wasm, threaded: G.threaded });
+  const id = G.id;
   worker.onmessage = ({ data }) => {
-    if (data.type === 'ready') {
-      engineThreads = data.threads;
-      engineReady = true;
-    }
-    if (data.type !== 'bestmove' || data.token !== token) return;
+    if (data.type === 'ready') engineThreads = data.threads;
+    if (data.type !== 'bestmove' || data.token !== token || id !== G.id) return;
     // Instant replies feel abrupt; give the opponent a moment.
     setTimeout(() => {
       if (data.token !== token) return;
@@ -118,76 +125,42 @@ function think() {
 
 // ---- game -------------------------------------------------------------------
 
-function positionAt(ply) {
-  return rules.command(positionCommand(game.moves.slice(0, ply)));
-}
+const positionAt = (ply) => rules.command(positionCommand(game.moves.slice(0, ply)));
+const liveState = () => positionAt(game.moves.length);
+const enginesTurn = (state) => !game.end && state.turn !== game.color;
 
-function liveState() {
-  return positionAt(game.moves.length);
-}
-
-function enginesTurn(state) {
-  return !game.end && state.turn !== game.color;
-}
-
-function onBoardMove(from, to) {
+async function onBoardMove(from, to) {
   if (viewPly !== null) return;
   const state = liveState();
-  const options = state.legal.filter((m) => m.startsWith(from + to));
-  if (options.length === 1) play(options[0]);
-  else if (options.length > 1) choosePromotion(from, to, state.turn);
+  const move = await G.choose(board, state.legal, from, to, state.turn);
+  if (move) play(move);
+  else render();
 }
 
-function choosePromotion(from, to, color) {
-  const picker = $('#promotion');
-  picker.replaceChildren();
-  const file = to.charCodeAt(0) - 97;
-  const column = board.orientation === 'w' ? file : 7 - file;
-  const fromTop = (color === 'w') === (board.orientation === 'w');
-  ['q', 'n', 'r', 'b'].forEach((p, i) => {
-    const b = document.createElement('button');
-    b.className = `piece ${color}${p.toUpperCase()}`;
-    b.style.left = `${column * 12.5}%`;
-    b.style.top = fromTop ? `${i * 12.5}%` : `${(7 - i) * 12.5}%`;
-    b.ariaLabel = { q: 'Queen', n: 'Knight', r: 'Rook', b: 'Bishop' }[p];
-    b.onclick = (e) => {
-      e.stopPropagation();
-      picker.hidden = true;
-      play(from + to + p);
-    };
-    picker.append(b);
-  });
-  picker.onclick = () => {
-    picker.hidden = true;
-    render();
-  };
-  picker.hidden = false;
-}
-
-function play(uci) {
+function play(move) {
   rules.command(positionCommand(game.moves));
-  const { san } = rules.command(`san ${uci}`);
+  const { san } = rules.command(`san ${move}`);
   if (!san) return;
-  game.moves.push(uci);
+  game.moves.push(move);
   game.sans.push(san);
   const state = liveState();
-  if (state.result) game.end = { reason: state.result, winner: state.result === 'checkmate' ? (state.turn === 'w' ? 'b' : 'w') : null };
-  save(SAVE_KEY, game);
-  click(san.includes('x'));
+  if (state.result) game.end = { reason: state.result, winner: state.result === 'checkmate' ? other(state.turn) : null };
+  saveGame();
+  click(G.isCapture(san));
   viewPly = null;
   render(true);
   if (enginesTurn(state)) think();
 }
 
-function newGame(color, level) {
+function newGame(choice, level) {
   stopThinking();
   worker.postMessage({ type: 'newgame' });
-  if (color === 'random') color = Math.random() < 0.5 ? 'w' : 'b';
+  const color = choice === 'first' ? G.first : choice === 'second' ? second() : Math.random() < 0.5 ? G.first : second();
   game = { moves: [], sans: [], color, level, end: null };
   flipped = false;
   lastInfo = null;
   viewPly = null;
-  save(SAVE_KEY, game);
+  saveGame();
   render();
   if (enginesTurn(liveState())) think();
 }
@@ -198,7 +171,7 @@ function takeback() {
   // Undo Kishi's reply, if any, and your last move, so it is your turn again.
   while (game.moves.length) {
     const ply = game.moves.length - 1;
-    const yours = (ply % 2 === 0) === (game.color === 'w');
+    const yours = (ply % 2 === 0) === (game.color === G.first);
     game.moves.pop();
     game.sans.pop();
     if (yours) break;
@@ -206,48 +179,27 @@ function takeback() {
   game.end = null;
   lastInfo = null;
   viewPly = null;
-  save(SAVE_KEY, game);
+  saveGame();
   render();
-  // Back at the start as black: Kishi opens again.
+  // Back at the start as the second player: Kishi opens again.
   if (enginesTurn(liveState())) think();
 }
 
 function resign() {
   if (game.end || !game.moves.length) return;
   stopThinking();
-  game.end = { reason: 'resign', winner: game.color === 'w' ? 'b' : 'w' };
-  save(SAVE_KEY, game);
+  game.end = { reason: 'resign', winner: other(game.color) };
+  saveGame();
   render();
 }
 
-function pgn() {
-  const date = new Date().toISOString().slice(0, 10).replaceAll('-', '.');
-  const you = 'You';
-  const kishi = `Kishi level ${game.level}`;
-  const result = !game.end ? '*' : game.end.winner === 'w' ? '1-0' : game.end.winner === 'b' ? '0-1' : '1/2-1/2';
-  const tags = [
-    ['Event', 'Casual game'],
-    ['Site', location.host || 'Kishi'],
-    ['Date', date],
-    ['White', game.color === 'w' ? you : kishi],
-    ['Black', game.color === 'w' ? kishi : you],
-    ['Result', result],
-  ];
-  let body = '';
-  game.sans.forEach((san, i) => {
-    if (i % 2 === 0) body += `${i / 2 + 1}. `;
-    body += san + ' ';
-  });
-  return tags.map(([k, v]) => `[${k} "${v}"]`).join('\n') + '\n\n' + body + result + '\n';
-}
-
 async function share() {
-  const text = pgn();
+  const text = G.export(game);
   try {
-    if (navigator.share) await navigator.share({ title: 'Kishi game', text });
+    if (navigator.share) await navigator.share({ title: `Kishi ${G.name.toLowerCase()} game`, text });
     else {
       await navigator.clipboard.writeText(text);
-      toast('PGN copied');
+      toast('Copied');
     }
   } catch {}
 }
@@ -260,36 +212,55 @@ function toast(message) {
   toast.timer = setTimeout(() => (t.hidden = true), 1600);
 }
 
-// ---- rendering --------------------------------------------------------------
-
-function material(fen) {
-  const counts = { w: {}, b: {} };
-  for (const p of Object.values(fenPieces(fen))) counts[p[0]][p[1]] = (counts[p[0]][p[1]] ?? 0) + 1;
-  const start = { P: 8, N: 2, B: 2, R: 2, Q: 1 };
-  const out = { w: [], b: [], diff: 0 };
-  for (const k of ['Q', 'R', 'B', 'N', 'P']) {
-    // Pieces each side has captured from the other.
-    const takenFromBlack = Math.max(0, start[k] - (counts.b[k] ?? 0));
-    const takenFromWhite = Math.max(0, start[k] - (counts.w[k] ?? 0));
-    for (let i = 0; i < takenFromBlack; i++) out.w.push('b' + k);
-    for (let i = 0; i < takenFromWhite; i++) out.b.push('w' + k);
-    out.diff += ((counts.w[k] ?? 0) - (counts.b[k] ?? 0)) * PIECE_VALUE[k];
-  }
-  return out;
+/** Switches to another game: its engine, its board, and its saved game. */
+async function switchGame(id) {
+  if (id === G.id) return;
+  stopThinking();
+  // Load the new engine first: until it is ready, the old game keeps rendering.
+  const next = GAMES[id];
+  const nextRules = await loadEngine(new URL(next.wasm, import.meta.url));
+  worker?.terminate();
+  board?.destroy?.();
+  G = next;
+  rules = nextRules;
+  settings.game = id;
+  save(SETTINGS_KEY, settings);
+  setupBoard();
+  game = loadGame();
+  if (positionAt(game.moves.length).error) game = freshGame();
+  flipped = false;
+  lastInfo = null;
+  viewPly = null;
+  startWorker();
+  render();
+  if (enginesTurn(liveState())) think();
 }
+
+function setupBoard() {
+  const old = $('#board');
+  const el = document.createElement('div');
+  el.id = 'board';
+  old.replaceWith(el);
+  board = G.createBoard(el, onBoardMove);
+  board.onInteract = unlockAudio;
+  // Selecting on the board changes which hand piece is lit.
+  board.onSelect = () => renderPlayers(positionAt(viewPly ?? game.moves.length));
+  document.body.dataset.game = G.id;
+  $('#game-name').textContent = G.id === 'chess' ? '' : G.name.toLowerCase();
+}
+
+// ---- rendering --------------------------------------------------------------
 
 function formatScore(info) {
   if (!info) return '';
-  // Scores are from Kishi's side; show them from white's.
-  const sign = game.color === 'w' ? -1 : 1;
+  // Scores are from Kishi's side; show them from the first player's.
+  const sign = game.color === G.first ? -1 : 1;
   if (info.mate !== null) return `#${info.mate * sign}`;
   const s = (info.score * sign) / 100;
   return (s > 0 ? '+' : '') + s.toFixed(1);
 }
 
-function renderPlayer(el, color, isEngine, mat) {
-  const captured = mat[color].map((p) => `<i class="mini ${p}"></i>`).join('');
-  const lead = color === 'w' ? mat.diff : -mat.diff;
+function renderPlayer(el, color, isEngine, state) {
   let name, meta;
   if (isEngine) {
     name = 'Kishi';
@@ -300,19 +271,29 @@ function renderPlayer(el, color, isEngine, mat) {
     }
   } else {
     name = 'You';
-    meta = color === 'w' ? 'white' : 'black';
+    meta = G.sides[color];
   }
-  el.innerHTML = `
-    <div class="who"><span class="turn"></span><span class="name">${name}</span><span class="meta">${meta}</span></div>
-    <div class="captured">${captured}${lead > 0 ? `<span class="lead">+${lead}</span>` : ''}</div>`;
+  el.innerHTML = `<div class="who"><span class="turn"></span><span class="name">${name}</span><span class="meta">${meta}</span></div>${G.sideDetail(state, color)}`;
+  G.wireSide?.(el, board, !isEngine && viewPly === null && !game.end && !thinking);
+}
+
+function renderPlayers(state) {
+  const orientation = flipped ? other(game.color) : game.color;
+  const top = other(orientation);
+  renderPlayer($('#top'), top, top !== game.color, state);
+  renderPlayer($('#bottom'), orientation, orientation !== game.color, state);
+  const live = viewPly === null;
+  $('#top').classList.toggle('to-move', live && !game.end && state.turn === top);
+  $('#bottom').classList.toggle('to-move', live && !game.end && state.turn !== top);
 }
 
 /** The engine section of the menu: what Kishi is, and what its last search did. */
 function renderEngineInfo() {
   const rows = [
+    ['game', G.name.toLowerCase()],
     ['threads', `${engineThreads}${engineThreads > 1 ? ' (Web Workers, shared memory)' : ''}`],
     ['build', 'rust → wasm · simd128'],
-    ['eval', 'hand-written (network in training)'],
+    ['eval', G.id === 'chess' ? 'hand-written (network in training)' : 'hand-written'],
     ['hash', '32 MB'],
   ];
   if (lastInfo && !lastInfo.book && lastInfo.nodes) {
@@ -327,33 +308,10 @@ function render(animate = false) {
   const ply = viewPly ?? game.moves.length;
   const state = positionAt(ply);
   const live = viewPly === null;
-  const dests = new Map();
-  if (live && !game.end && !thinking && state.turn === game.color) {
-    for (const m of state.legal) {
-      const from = m.slice(0, 2);
-      if (!dests.has(from)) dests.set(from, new Set());
-      dests.get(from).add(m.slice(2, 4));
-    }
-  }
-  const last = ply > 0 ? game.moves[ply - 1] : null;
-  const orientation = flipped ? (game.color === 'w' ? 'b' : 'w') : game.color;
-  board.set({
-    fen: state.fen,
-    lastMove: last ? [last.slice(0, 2), last.slice(2, 4)] : null,
-    check: state.check,
-    dests,
-    movable: dests.size > 0,
-    orientation,
-    animate,
-  });
-
-  const mat = material(state.fen);
-  const top = orientation === 'w' ? 'b' : 'w';
-  renderPlayer($('#top'), top, top !== game.color, mat);
-  renderPlayer($('#bottom'), orientation, orientation !== game.color, mat);
-  $('#top').classList.toggle('to-move', live && !game.end && state.turn === top);
-  $('#bottom').classList.toggle('to-move', live && !game.end && state.turn !== top);
-
+  const dests = live && !game.end && !thinking && state.turn === game.color ? G.dests(state.legal) : new Map();
+  const orientation = flipped ? other(game.color) : game.color;
+  G.show(board, { state, lastMove: ply > 0 ? game.moves[ply - 1] : null, dests, orientation, animate });
+  renderPlayers(state);
   renderMoves(ply);
   renderStatus();
   $('#takeback').disabled = !game.moves.length;
@@ -365,11 +323,13 @@ function render(animate = false) {
 function renderMoves(ply) {
   const list = $('#moves');
   list.replaceChildren();
-  for (let i = 0; i < game.sans.length; i += 2) {
+  list.classList.toggle('single', !G.pairs);
+  const step = G.pairs ? 2 : 1;
+  for (let i = 0; i < game.sans.length; i += step) {
     const row = document.createElement('div');
     row.className = 'row';
-    row.innerHTML = `<span class="num">${i / 2 + 1}.</span>`;
-    for (const j of [i, i + 1]) {
+    row.innerHTML = `<span class="num">${G.pairs ? i / 2 + 1 : i + 1}.</span>`;
+    for (const j of G.pairs ? [i, i + 1] : [i]) {
       const cell = document.createElement('button');
       cell.className = 'mv';
       if (j < game.sans.length) {
@@ -392,25 +352,15 @@ function renderStatus() {
     over.hidden = true;
     return;
   }
-  const reasons = {
-    checkmate: 'Checkmate',
-    stalemate: 'Stalemate',
-    fifty: 'Fifty-move rule',
-    material: 'Insufficient material',
-    repetition: 'Threefold repetition',
-    resign: 'You resigned',
-  };
   const w = game.end.winner;
-  const headline = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
-  over.querySelector('.result-code').textContent = !w ? '½-½' : w === 'w' ? '1-0' : '0-1';
-  over.querySelector('.headline').textContent = headline;
-  over.querySelector('.reason').textContent = reasons[game.end.reason] ?? '';
+  over.querySelector('.result-code').textContent = G.resultCode(w);
+  over.querySelector('.headline').textContent = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
+  over.querySelector('.reason').textContent = game.end.reason === 'resign' ? 'You resigned' : (G.reasons[game.end.reason] ?? '');
   over.hidden = false;
 }
 
 function goTo(ply) {
-  if (ply >= game.moves.length) viewPly = null;
-  else viewPly = Math.max(0, ply);
+  viewPly = ply >= game.moves.length ? null : Math.max(0, ply);
   render(true);
 }
 
@@ -432,12 +382,23 @@ function openNewGame() {
     b.dataset.level = n;
     levels.append(b);
   }
+  dialog.querySelector('h2').textContent = `New ${G.name.toLowerCase()} game`;
+  const [first, second_] = [G.first, second()];
+  dialog.querySelector('[value="first"] span').textContent = G.sideLabels.first;
+  dialog.querySelector('[value="second"] span').textContent = G.sideLabels.second;
+  dialog.querySelector('[value="first"] i').className = `piece ${G.kingClass[first]}`;
+  dialog.querySelector('[value="second"] i').className = `piece ${G.kingClass[second_]}`;
+  // Chess splits two kings down the middle; shogi's pentagons sit side by side.
+  dialog.querySelector('.halves').classList.toggle('pair', G.id !== 'chess');
+  const halves = dialog.querySelectorAll('.halves i');
+  halves[0].className = `piece half ${G.kingClass[first]}`;
+  halves[1].className = `piece half ${G.kingClass[second_]}`;
   dialog.showModal();
 }
 
 function wire() {
   $('#new').onclick = openNewGame;
-  $('#rematch').onclick = () => newGame(game.color === 'w' ? 'b' : 'w', game.level);
+  $('#rematch').onclick = () => newGame(game.color === G.first ? 'second' : 'first', game.level);
   $('#again').onclick = openNewGame;
   $('#takeback').onclick = takeback;
   // Game actions live in the menu: close it, then act.
@@ -445,12 +406,14 @@ function wire() {
     $('#settings-dialog').close();
     action();
   };
-  $('#flip').onclick = fromMenu(() => {
+  const flip = () => {
     flipped = !flipped;
     render();
-  });
+  };
+  $('#flip').onclick = fromMenu(flip);
   $('#resign').onclick = fromMenu(resign);
   $('#share').onclick = fromMenu(share);
+  document.querySelectorAll('[data-switch]').forEach((b) => (b.onclick = fromMenu(() => switchGame(b.dataset.switch))));
   $('#prev').onclick = () => goTo((viewPly ?? game.moves.length) - 1);
   $('#next').onclick = () => goTo((viewPly ?? game.moves.length) + 1);
   $('#first').onclick = () => goTo(0);
@@ -459,6 +422,8 @@ function wire() {
     $('#opt-eval').checked = settings.showEval;
     $('#opt-sound').checked = settings.sound;
     document.querySelectorAll('input[name="theme"]').forEach((r) => (r.checked = r.value === settings.theme));
+    document.querySelectorAll('[data-switch]').forEach((b) => b.classList.toggle('on', b.dataset.switch === G.id));
+    $('#share span').textContent = G.exportLabel;
     renderEngineInfo();
     $('#settings-dialog').showModal();
   };
@@ -467,17 +432,17 @@ function wire() {
   });
   $('#settings-dialog').addEventListener('close', () => {
     const theme = document.querySelector('input[name="theme"]:checked')?.value ?? 'stone';
-    settings = { showEval: $('#opt-eval').checked, sound: $('#opt-sound').checked, theme };
+    settings = { ...settings, showEval: $('#opt-eval').checked, sound: $('#opt-sound').checked, theme };
     document.documentElement.dataset.board = theme;
     save(SETTINGS_KEY, settings);
     render();
   });
   $('#newgame').addEventListener('close', (e) => {
     const dialog = e.target;
-    const color = dialog.returnValue;
-    if (!['w', 'b', 'random'].includes(color)) return;
+    const choice = dialog.returnValue;
+    if (!['first', 'second', 'random'].includes(choice)) return;
     const level = Number(dialog.querySelector('.lvl.on')?.dataset.level ?? game.level);
-    newGame(color, level);
+    newGame(choice, level);
   });
   document.addEventListener('keydown', (e) => {
     if (document.querySelector('dialog[open]')) return;
@@ -485,10 +450,7 @@ function wire() {
     else if (e.key === 'ArrowRight') $('#next').click();
     else if (e.key === 'ArrowUp') goTo(0);
     else if (e.key === 'ArrowDown') goTo(game.moves.length);
-    else if (e.key === 'f') {
-      flipped = !flipped;
-      render();
-    }
+    else if (e.key === 'f') flip();
   });
 }
 
@@ -513,11 +475,13 @@ async function isolate() {
 
 async function main() {
   if (!(await isolate())) return;
-  rules = await loadEngine();
+  rules = await loadEngine(new URL(G.wasm, import.meta.url));
+  setupBoard();
+  game = loadGame();
+  // A saved game whose moves no longer replay starts over.
+  if (positionAt(game.moves.length).error) game = freshGame();
   startWorker();
   wire();
-  // A saved game whose moves no longer replay starts over.
-  if (positionAt(game.moves.length).error) game = { moves: [], sans: [], color: 'w', level: 4, end: null };
   render();
   if (enginesTurn(liveState())) think();
   document.body.classList.add('ready');

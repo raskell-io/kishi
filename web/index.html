@@ -30,6 +30,7 @@
     <a class="brand" href="./" aria-label="Kishi">
       <img src="icon.svg" alt="" width="26" height="26">
       <span class="wordmark">kishi</span>
+      <span class="game-name" id="game-name"></span>
     </a>
     <button id="settings" class="icon" aria-label="Menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>
@@ -82,9 +83,9 @@
       <div class="levels"></div>
       <span class="label">Play as</span>
       <div class="colors">
-        <button value="w" class="color"><i class="piece wK"></i><span>White</span></button>
+        <button value="first" class="color"><i class="piece wK"></i><span>White</span></button>
         <button value="random" class="color"><span class="halves"><i class="piece wK half"></i><i class="piece bK half"></i></span><span>Random</span></button>
-        <button value="b" class="color"><i class="piece bK"></i><span>Black</span></button>
+        <button value="second" class="color"><i class="piece bK"></i><span>Black</span></button>
       </div>
     </form>
   </dialog>
@@ -98,10 +99,18 @@
 
       <div class="overlay-body">
         <section>
-          <span class="label">Game</span>
+          <span class="label">Play</span>
+          <div class="games">
+            <button type="button" class="game-tile" data-switch="chess"><span class="glyph"><i class="piece wN"></i></span><span>Chess</span></button>
+            <button type="button" class="game-tile" data-switch="shogi"><span class="glyph"><i class="koma-icon">桂</i></span><span>Shogi</span></button>
+          </div>
+        </section>
+
+        <section>
+          <span class="label">This game</span>
           <div class="tiles">
             <button type="button" id="flip" class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg><span>Flip board</span></button>
-            <button type="button" id="share" class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-4M4 10a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg><span>Copy PGN</span></button>
+            <button type="button" id="share" class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-4M4 10a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/></svg><span>Copy record</span></button>
             <button type="button" id="resign" class="tile danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg><span>Resign</span></button>
           </div>
         </section>
@@ -127,8 +136,8 @@
         </section>
 
         <section class="about">
-          <p>Kishi is a chess engine written in Rust and compiled to WebAssembly. It thinks on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
-          <p class="muted">Pieces: Chessnut by Alexis Luengas (Apache 2.0). Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
+          <p>Kishi plays chess and shogi with engines written in Rust and compiled to WebAssembly. It thinks on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
+          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces are drawn by Kishi in your device's Japanese typeface. Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
         </section>
       </div>
     </form>

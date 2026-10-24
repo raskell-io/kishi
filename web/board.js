@@ -53,10 +53,18 @@ export class Board {
       this.layers[name] = layer;
     }
     el.addEventListener('pointerdown', (e) => this.pointerDown(e));
-    window.addEventListener('pointermove', (e) => this.pointerMove(e), { passive: false });
-    window.addEventListener('pointerup', (e) => this.pointerUp(e));
-    window.addEventListener('pointercancel', () => this.cancelDrag());
+    this.listeners = [
+      ['pointermove', (e) => this.pointerMove(e), { passive: false }],
+      ['pointerup', (e) => this.pointerUp(e)],
+      ['pointercancel', () => this.cancelDrag()],
+    ];
+    for (const [type, fn, opts] of this.listeners) window.addEventListener(type, fn, opts);
     el.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  /** Stops listening to the window, when the board is replaced by another game's. */
+  destroy() {
+    for (const [type, fn] of this.listeners) window.removeEventListener(type, fn);
   }
 
   /** Board coordinates (0..7, 0..7) of a square as percentages of the board. */
