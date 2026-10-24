@@ -20,12 +20,18 @@
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="preload" href="fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/GeistMono-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/kishi-koma.woff" as="font" type="font/woff" crossorigin>
   <link rel="modulepreload" href="board.js">
   <link rel="modulepreload" href="engine.js">
   <link rel="preload" href="kishi.wasm" as="fetch" crossorigin>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="koma-ivory" x1="0" y1="0" x2="0.3" y2="1"><stop offset="0" stop-color="#faf7f0"/><stop offset="1" stop-color="#e9e3d6"/></linearGradient>
+    </defs>
+  </svg>
   <header class="bar">
     <a class="brand" href="./" aria-label="Kishi">
       <img src="icon.svg" alt="" width="26" height="26">
@@ -102,7 +108,7 @@
           <span class="label">Play</span>
           <div class="games">
             <button type="button" class="game-tile" data-switch="chess"><span class="glyph"><i class="piece wN"></i></span><span>Chess</span></button>
-            <button type="button" class="game-tile" data-switch="shogi"><span class="glyph"><i class="koma-icon">桂</i></span><span>Shogi</span></button>
+            <button type="button" class="game-tile" data-switch="shogi"><span class="glyph"></span><span>Shogi</span></button>
           </div>
         </section>
 
@@ -137,7 +143,7 @@
 
         <section class="about">
           <p>Kishi plays chess and shogi with engines written in Rust and compiled to WebAssembly. It thinks on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
-          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces are drawn by Kishi in your device's Japanese typeface. Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
+          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces are drawn by Kishi, lettered in Noto Sans JP (OFL). Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
         </section>
       </div>
     </form>

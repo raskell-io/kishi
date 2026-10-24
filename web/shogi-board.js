@@ -13,6 +13,20 @@ export function kanji(kind, side) {
   return kind === 'K' ? KING[side] : KANJI[kind];
 }
 
+// A koma: an ivory pentagon in a bold ink line, standing on an edge of pale wood
+// (its own outline pushed straight down), lettered in bold sans-serif kanji.
+const TILE = 'M50 5 83 16 94 90H6L17 16Z';
+const EDGE = 8;
+
+/** A piece as SVG; `away` turns it to face the far side, its edge staying underneath. */
+export function komaSvg(kind, side, away) {
+  const turn = away ? ' transform="rotate(180 50 47.5)"' : '';
+  const promoted = kind.startsWith('+') ? ' promoted' : '';
+  return `<svg class="koma${promoted}" viewBox="0 0 100 ${100 + EDGE}" aria-hidden="true">` +
+    `<g transform="translate(0 ${EDGE})"><g${turn}><path class="edge" d="${TILE}"/></g></g>` +
+    `<g${turn}><path class="face" d="${TILE}"/><text x="50" y="52">${kanji(kind, side)}</text></g></svg>`;
+}
+
 /** Square name (USI, e.g. "7g") of a board index: row-major from gote's back rank, 9-file first. */
 export function squareName(index) {
   return `${9 - (index % 9)}${RANKS[Math.floor(index / 9)]}`;
@@ -120,10 +134,9 @@ export class ShogiBoard {
   }
 
   face(kind, side) {
-    const el = document.createElement('span');
-    el.className = `koma${kind.startsWith('+') ? ' promoted' : ''}${side !== this.orientation ? ' away' : ''}`;
-    el.textContent = kanji(kind, side);
-    return el;
+    const t = document.createElement('template');
+    t.innerHTML = komaSvg(kind, side, side !== this.orientation);
+    return t.content.firstChild;
   }
 
   renderPieces(previous) {

@@ -1,6 +1,6 @@
 // Shogi: the board, the hands in the player rows, drops and the promotion
 // choice, and the game record for export. The shell (app.js) does the rest.
-import { ShogiBoard, parseSfen, kanji } from '../shogi-board.js';
+import { ShogiBoard, parseSfen, komaSvg } from '../shogi-board.js';
 
 const HAND_ORDER = ['R', 'B', 'G', 'S', 'N', 'L', 'P'];
 const START_SFEN = 'lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1';
@@ -13,13 +13,17 @@ export default {
   first: 'b',
   sides: { b: 'sente', w: 'gote' },
   sideLabels: { first: 'Sente', second: 'Gote' },
-  kingClass: { b: 'koma-icon sente', w: 'koma-icon gote' },
   pairs: false,
   exportLabel: 'Copy record',
   reasons: {
     checkmate: 'Checkmate (tsumi)',
     repetition: 'Fourfold repetition (sennichite)',
     moves: 'Move limit',
+  },
+
+  /** A piece for menus and dialogs: the king by default. */
+  icon(side, kind = 'K') {
+    return komaSvg(kind, side, side === 'w');
   },
 
   createBoard(el, onMove) {
@@ -59,8 +63,8 @@ export default {
       box.style.top = `${Math.min(7, y / 100) * 11.111}%`;
       for (const [promote, kind] of [[true, '+' + piece.kind], [false, piece.kind]]) {
         const b = document.createElement('button');
-        b.className = `koma${promote ? ' promoted' : ''}`;
-        b.textContent = kanji(kind, piece.side);
+        b.className = 'choice';
+        b.innerHTML = komaSvg(kind, piece.side, piece.side !== board.orientation);
         b.ariaLabel = promote ? 'Promote' : 'Do not promote';
         b.onclick = (e) => {
           e.stopPropagation();
@@ -80,11 +84,11 @@ export default {
     });
   },
 
-  /** The right side of a player's row: the pieces in their hand, which are tappable when it is theirs to drop. */
-  sideDetail(state, color) {
+  /** The right side of a player's row: the pieces in their hand, tappable when it is theirs to drop. */
+  sideDetail(state, color, away) {
     const { hands } = parseSfen(state.sfen);
     const pieces = HAND_ORDER.filter((k) => hands[color][k]).map(
-      (k) => `<button class="hand-piece" data-kind="${k}" aria-label="${k} in hand"><span class="koma">${kanji(k, color)}</span>${hands[color][k] > 1 ? `<sub>${hands[color][k]}</sub>` : ''}</button>`,
+      (k) => `<button class="hand-piece" data-kind="${k}" aria-label="${k} in hand">${komaSvg(k, color, away)}${hands[color][k] > 1 ? `<sub>${hands[color][k]}</sub>` : ''}</button>`,
     );
     return `<div class="hand">${pieces.join('')}</div>`;
   },

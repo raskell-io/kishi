@@ -484,39 +484,32 @@ dialog.overlay form {
 .game-tile.on { box-shadow: inset 0 0 0 1px var(--accent); }
 .glyph { width: 34px; height: 34px; display: grid; place-items: center; flex: none; }
 .glyph .piece { position: static; width: 34px; height: 34px; display: block; }
-.glyph .koma-icon { width: 28px; height: 32px; font-size: 17px; }
 
 /* ---- shogi ---- */
 
-/* A koma: a pentagon of pale wood, lettered in the device's Japanese serif. */
-:root {
-  --koma-shape: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M50 0 86 13 100 100H0L14 13Z'/%3E%3C/svg%3E");
-  --koma-face: linear-gradient(170deg, #f4e9cf, #e2cfa8);
-  --koma-ink: #1b1a16;
-  --koma-red: #b8432c;
-  --mincho: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", YuMincho, "Noto Serif JP", "Noto Serif CJK JP", serif;
+/* A koma, drawn as SVG by shogi-board.js: ivory face, bold ink line, a pale wood edge underneath. */
+@font-face {
+  font-family: "Kishi Koma";
+  src: url(fonts/kishi-koma.woff) format("woff");
+  font-weight: 700;
+  font-display: block;
 }
-.koma, .koma-icon {
-  -webkit-mask: var(--koma-shape) center / 100% 100% no-repeat;
-  mask: var(--koma-shape) center / 100% 100% no-repeat;
-  background: var(--koma-face);
-  color: var(--koma-ink);
-  font-family: var(--mincho);
-  font-weight: 600;
-  display: grid;
-  place-items: center;
+svg.koma { display: block; width: 100%; height: 100%; overflow: visible; }
+.koma .face { fill: url(#koma-ivory); stroke: #1b1a16; stroke-width: 5.5; stroke-linejoin: round; }
+.koma .edge { fill: #cdbf9f; stroke: #1b1a16; stroke-width: 5.5; stroke-linejoin: round; }
+.koma text {
+  font-family: "Kishi Koma", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  font-weight: 700;
+  font-size: 44px;
   font-style: normal;
-  line-height: 1;
-  padding-top: 10%;
+  fill: #1b1a16;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
-.koma.promoted, .koma-icon.promoted { color: var(--koma-red); }
-.koma.away { transform: rotate(180deg); padding-top: 0; padding-bottom: 10%; }
-.koma-icon { width: 38px; height: 44px; font-size: 22px; }
-.koma-icon.sente::after { content: "玉"; }
-.koma-icon.gote::after { content: "王"; }
-.koma-icon.gote { transform: rotate(180deg); padding-top: 0; padding-bottom: 10%; }
-.color .koma-icon.piece { position: relative; width: 38px; height: 44px; }
-.halves .koma-icon { position: absolute; inset: 1px 4px; width: auto; height: auto; }
+.koma.promoted text { fill: #c0442b; }
+.koma-piece { display: block; }
+.color .koma-piece.piece { position: relative; width: 40px; height: 44px; }
+.glyph svg.koma { width: 30px; height: 33px; }
 
 /* The same squares as the chess board, nine to a side. */
 .board.shogi {
@@ -524,8 +517,8 @@ dialog.overlay form {
   background: repeating-conic-gradient(var(--dark-sq) 0 25%, var(--light-sq) 0 50%) 0 0 / 22.2222% 22.2222%;
 }
 .board.shogi .square, .board.shogi .piece { width: 11.1111%; height: 11.1111%; }
-.board.shogi .piece { display: grid; place-items: center; filter: drop-shadow(0 0.25cqw 0.25cqw rgba(0, 0, 0, 0.32)); }
-.board.shogi .piece .koma { width: 80%; height: 90%; font-size: 5.4cqw; }
+.board.shogi .piece { display: grid; place-items: center; }
+.board.shogi .piece svg.koma { width: 84%; height: 88%; }
 .board.shogi .piece.dropped { animation: drop 0.24s ease-out; }
 @keyframes drop { from { opacity: 0; scale: 1.15; } }
 .board.shogi .coord.file { width: 11.1111%; }
@@ -533,25 +526,23 @@ dialog.overlay form {
 .board.shogi .dest { background: radial-gradient(var(--dest) 16%, rgba(0, 0, 0, 0) 17%); }
 
 .hand { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
-.hand-piece { position: relative; width: 30px; height: 34px; padding: 0; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35)); }
+.hand-piece { position: relative; width: 30px; height: 34px; padding: 0; }
 .hand-piece:disabled { opacity: 1; cursor: default; }
-.hand-piece .koma { width: 100%; height: 100%; font-size: 17px; }
 .hand-piece sub { position: absolute; right: -5px; bottom: -3px; font: 500 11px var(--mono); color: var(--strong); }
-.hand-piece.on .koma { background: linear-gradient(170deg, #f7d9c9, #e9b49f); }
-.hand-piece:not(:disabled):hover .koma { background: linear-gradient(170deg, #fbf1dc, #ead9b6); }
+.hand-piece.on svg.koma .face { fill: #f3cbb9; }
+.hand-piece:not(:disabled):hover svg.koma { transform: translateY(-2px); }
+.hand-piece svg.koma { transition: transform 0.15s; }
 
 #promotion.shogi { background: rgba(14, 15, 13, 0.45); }
 .promote-choice { position: absolute; width: 11.1111%; display: flex; flex-direction: column; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5)); }
-.promote-choice .koma { width: 100%; aspect-ratio: 1; font-size: 5.4cqw; padding-top: 10%; transition: transform 0.15s; }
-.promote-choice .koma:hover { transform: scale(1.06); }
+.promote-choice .choice { display: grid; place-items: center; width: 100%; aspect-ratio: 1; padding: 0; background: var(--light-sq); transition: transform 0.15s; }
+.promote-choice .choice svg.koma { width: 84%; height: 88%; }
+.promote-choice .choice:hover { transform: scale(1.06); }
 #promotion.shogi { container-type: size; }
 
 /* Shogi counts single moves: one per row on the desktop column, a running line on phones. */
 @media (min-width: 860px) {
   .moves.single .row { grid-template-columns: 36px 1fr; }
 }
-/* The far player's hand faces them, like their pieces on the board. */
-#top .hand-piece .koma { transform: rotate(180deg); padding-top: 0; padding-bottom: 10%; }
 .halves.pair { display: flex; align-items: center; justify-content: center; gap: 3px; width: auto; }
-.halves.pair .piece { position: relative; inset: auto; width: 22px; height: 26px; font-size: 13px; clip-path: none; }
-.halves.pair .koma-icon.gote { transform: rotate(180deg); }
+.halves.pair .piece { position: relative; inset: auto; width: 24px; height: 27px; clip-path: none; }

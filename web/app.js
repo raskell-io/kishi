@@ -273,7 +273,7 @@ function renderPlayer(el, color, isEngine, state) {
     name = 'You';
     meta = G.sides[color];
   }
-  el.innerHTML = `<div class="who"><span class="turn"></span><span class="name">${name}</span><span class="meta">${meta}</span></div>${G.sideDetail(state, color)}`;
+  el.innerHTML = `<div class="who"><span class="turn"></span><span class="name">${name}</span><span class="meta">${meta}</span></div>${G.sideDetail(state, color, el.id === 'top')}`;
   G.wireSide?.(el, board, !isEngine && viewPly === null && !game.end && !thinking);
 }
 
@@ -386,13 +386,17 @@ function openNewGame() {
   const [first, second_] = [G.first, second()];
   dialog.querySelector('[value="first"] span').textContent = G.sideLabels.first;
   dialog.querySelector('[value="second"] span').textContent = G.sideLabels.second;
-  dialog.querySelector('[value="first"] i').className = `piece ${G.kingClass[first]}`;
-  dialog.querySelector('[value="second"] i').className = `piece ${G.kingClass[second_]}`;
-  // Chess splits two kings down the middle; shogi's pentagons sit side by side.
-  dialog.querySelector('.halves').classList.toggle('pair', G.id !== 'chess');
+  // Chess shows its king images; shogi draws its kings, and they sit side by side under Random.
+  const king = (i, side, extra = '') => {
+    i.className = G.icon ? `piece koma-piece ${extra}` : `piece ${extra} ${G.kingClass[side]}`;
+    i.innerHTML = G.icon ? G.icon(side) : '';
+  };
+  king(dialog.querySelector('[value="first"] i'), first);
+  king(dialog.querySelector('[value="second"] i'), second_);
+  dialog.querySelector('.halves').classList.toggle('pair', !!G.icon);
   const halves = dialog.querySelectorAll('.halves i');
-  halves[0].className = `piece half ${G.kingClass[first]}`;
-  halves[1].className = `piece half ${G.kingClass[second_]}`;
+  king(halves[0], first, 'half');
+  king(halves[1], second_, 'half');
   dialog.showModal();
 }
 
@@ -413,7 +417,11 @@ function wire() {
   $('#flip').onclick = fromMenu(flip);
   $('#resign').onclick = fromMenu(resign);
   $('#share').onclick = fromMenu(share);
-  document.querySelectorAll('[data-switch]').forEach((b) => (b.onclick = fromMenu(() => switchGame(b.dataset.switch))));
+  document.querySelectorAll('[data-switch]').forEach((b) => {
+    b.onclick = fromMenu(() => switchGame(b.dataset.switch));
+    const mod = GAMES[b.dataset.switch];
+    if (mod.icon) b.querySelector('.glyph').innerHTML = mod.icon(mod.first, 'N');
+  });
   $('#prev').onclick = () => goTo((viewPly ?? game.moves.length) - 1);
   $('#next').onclick = () => goTo((viewPly ?? game.moves.length) + 1);
   $('#first').onclick = () => goTo(0);
