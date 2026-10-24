@@ -1,5 +1,5 @@
-// The shogi board: a 9x9 grid with star points, pentagon pieces lettered in
-// kanji, and input by tap or drag. Drops start from the hands, which the game
+// The shogi board: nine by nine squares in the same colours as the chess board,
+// pentagon pieces lettered in kanji, and input by tap or drag. Drops start from the hands, which the game
 // module draws in the player rows and hands over with selectDrop().
 
 export const KANJI = {
@@ -8,7 +8,6 @@ export const KANJI = {
 };
 const KING = { b: '玉', w: '王' };
 const RANKS = 'abcdefghi';
-const NUMERALS = '一二三四五六七八九';
 
 export function kanji(kind, side) {
   return kind === 'K' ? KING[side] : KANJI[kind];
@@ -182,21 +181,24 @@ export class ShogiBoard {
     }
   }
 
+  /** Files along the bottom and ranks down the left, as on the chess board, in USI terms (7f). */
   renderCoords() {
     const layer = this.layers.coords;
     if (layer.dataset.orientation === this.orientation) return;
     layer.dataset.orientation = this.orientation;
     layer.replaceChildren();
+    // Squares alternate from a light top-left corner; with nine a side, so does every corner.
+    const shade = (r, c) => ((r + c) % 2 === 0 ? 'on-light' : 'on-dark');
     for (let i = 0; i < 9; i++) {
       const file = document.createElement('span');
-      file.className = 'coord file';
+      file.className = `coord file ${shade(8, i)}`;
       file.textContent = this.orientation === 'b' ? 9 - i : i + 1;
-      file.style.left = `${i * 11.111}%`;
+      file.style.left = `${i * 11.1111}%`;
       layer.append(file);
       const rank = document.createElement('span');
-      rank.className = 'coord rank';
-      rank.textContent = this.orientation === 'b' ? NUMERALS[i] : NUMERALS[8 - i];
-      rank.style.top = `${i * 11.111}%`;
+      rank.className = `coord rank ${shade(i, 0)}`;
+      rank.textContent = this.orientation === 'b' ? RANKS[i] : RANKS[8 - i];
+      rank.style.top = `${i * 11.1111}%`;
       layer.append(rank);
     }
   }

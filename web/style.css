@@ -518,28 +518,18 @@ dialog.overlay form {
 .color .koma-icon.piece { position: relative; width: 38px; height: 44px; }
 .halves .koma-icon { position: absolute; inset: 1px 4px; width: auto; height: auto; }
 
+/* The same squares as the chess board, nine to a side. */
 .board.shogi {
   container-type: size;
-  background-color: var(--light-sq);
-  background-image:
-    radial-gradient(circle at 33.333% 33.333%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
-    radial-gradient(circle at 66.667% 33.333%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
-    radial-gradient(circle at 33.333% 66.667%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
-    radial-gradient(circle at 66.667% 66.667%, var(--shogi-line) 0.45cqw, transparent 0.55cqw),
-    linear-gradient(to right, var(--shogi-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--shogi-line) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 11.1111% 11.1111%, 11.1111% 11.1111%;
-  box-shadow: inset -1px -1px 0 var(--shogi-line);
-  --shogi-line: color-mix(in srgb, var(--dark-sq) 55%, #1b1a16);
+  background: repeating-conic-gradient(var(--dark-sq) 0 25%, var(--light-sq) 0 50%) 0 0 / 22.2222% 22.2222%;
 }
 .board.shogi .square, .board.shogi .piece { width: 11.1111%; height: 11.1111%; }
 .board.shogi .piece { display: grid; place-items: center; filter: drop-shadow(0 0.25cqw 0.25cqw rgba(0, 0, 0, 0.32)); }
 .board.shogi .piece .koma { width: 80%; height: 90%; font-size: 5.4cqw; }
 .board.shogi .piece.dropped { animation: drop 0.24s ease-out; }
 @keyframes drop { from { opacity: 0; scale: 1.15; } }
-.board.shogi .coord { font: 500 clamp(7px, 1.7cqw, 10px)/1 var(--mono); color: var(--shogi-line); opacity: 0.85; }
-.board.shogi .coord.file { top: 2px; bottom: auto; width: 11.1111%; text-align: right; padding-right: 3px; }
-.board.shogi .coord.rank { left: auto; right: 2px; height: 11.1111%; padding-top: 0; display: flex; align-items: flex-end; padding-bottom: 3px; font-family: var(--mincho); }
+.board.shogi .coord.file { width: 11.1111%; }
+.board.shogi .coord.rank { height: 11.1111%; }
 .board.shogi .dest { background: radial-gradient(var(--dest) 16%, rgba(0, 0, 0, 0) 17%); }
 
 .hand { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }

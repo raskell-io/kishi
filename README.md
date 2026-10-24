@@ -72,7 +72,8 @@ same plan as the chess one:
 - **Evaluation.** Material, with pieces in hand worth a little more than on the
   board; king shelter by golds and silvers; pressure from pieces near the
   enemy king; mobility of bishops and rooks.
-- **Board.** Drawn by Kishi itself: pentagon pieces lettered in the device's
+- **Board.** The same squares and coordinates as the chess board, nine to a
+  side; the pieces are drawn by Kishi itself: pentagons lettered in the device's
   Japanese serif, promoted pieces in vermilion, gote's pieces turned to face
   sente. Pieces in hand sit in each player's row; tap one to drop it. Moves are
   written in Western notation (P-7f, Bx2b+, S*5e), and a game copies as a
