@@ -243,7 +243,7 @@ svg { width: 20px; height: 20px; flex: none; }
   font: 14px var(--mono);
 }
 .moves::-webkit-scrollbar { display: none; }
-.moves:empty::before { content: "your move"; color: var(--faint); font: 13px var(--sans); padding: 0 2px; }
+.moves:empty::before { content: "No moves yet"; color: var(--faint); font: 13px var(--sans); padding: 0 2px; }
 .row { display: flex; align-items: center; flex: none; }
 .num { color: var(--faint); padding: 0 2px 0 8px; font-size: 12px; }
 .row:first-child .num { padding-left: 0; }
@@ -526,7 +526,7 @@ svg.koma { display: block; width: 100%; height: 100%; overflow: visible; }
 .board.shogi .dest { background: radial-gradient(var(--dest) 16%, rgba(0, 0, 0, 0) 17%); }
 
 .hand { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; justify-content: flex-end; }
-.hand-piece { position: relative; width: 30px; height: 34px; padding: 0; }
+.hand-piece { position: relative; width: 34px; height: 40px; padding: 0; }
 .hand-piece:disabled { opacity: 1; cursor: default; }
 .hand-piece sub { position: absolute; right: -5px; bottom: -3px; font: 500 11px var(--mono); color: var(--strong); }
 .hand-piece.on svg.koma .face { fill: #f3cbb9; }
@@ -592,3 +592,67 @@ svg.stone.black .edge { fill: #5d5b52; }
 .stone-pair svg { position: absolute; width: 23px; height: 25px; }
 .stone-pair svg:first-child { left: 0; top: 0; }
 .stone-pair svg:last-child { right: 0; bottom: 0; }
+
+/* ---- finer UX ---- */
+
+.brand-row { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.game-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 6px 6px 8px;
+  border-radius: 999px;
+  font: 400 13px var(--mono);
+  color: var(--muted);
+  transition: background 0.2s, color 0.2s;
+}
+.game-switch svg { width: 15px; height: 15px; }
+.game-switch:hover { background: var(--raise); color: var(--strong); }
+
+/* The switcher: a small sheet under the header. */
+dialog.sheet {
+  margin: calc(env(safe-area-inset-top) + 56px) auto auto max(var(--gutter), calc((100vw - 1080px) / 2 + var(--gutter)));
+  width: min(360px, calc(100vw - 2 * var(--gutter)));
+  border-radius: 18px;
+  background: var(--raise);
+}
+dialog.sheet::backdrop { background: rgba(8, 8, 7, 0.45); backdrop-filter: none; -webkit-backdrop-filter: none; }
+dialog.sheet form { padding: 10px; }
+dialog.sheet[open] { animation: drop-in 0.18s ease-out; }
+@keyframes drop-in { from { opacity: 0; transform: translateY(-6px); } }
+
+/* Banners beside the board: reviewing the past, or a finished game. */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 12px;
+  background: var(--raise);
+  font-size: 14px;
+  color: var(--text);
+}
+.banner.result b { color: var(--accent); font-weight: 500; margin-right: 6px; }
+button.link { padding: 6px 12px; border-radius: 999px; color: var(--strong); font-weight: 500; font-size: 14px; }
+button.link:hover { background: var(--raise-2); }
+
+#gameover .card { position: relative; }
+#gameover-close { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; }
+
+.game-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
+.chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: background 0.2s, color 0.2s;
+}
+.chip:hover { background: var(--raise-2); }
+.chip.on { color: var(--ink); background: var(--strong); box-shadow: none; }
+
+.meta .yours { color: var(--text); }
+.tile.armed { background: rgba(216, 100, 74, 0.16); }
+.tile.armed svg, .tile.armed span { color: var(--accent); }

@@ -254,7 +254,7 @@ function setupBoard() {
   // Selecting on the board changes which hand piece is lit.
   board.onSelect = () => renderPlayers(positionAt(viewPly ?? game.moves.length));
   document.body.dataset.game = G.id;
-  $('#game-name').textContent = G.id === 'chess' ? '' : G.name.toLowerCase();
+  $('#game-name').textContent = G.name.toLowerCase();
 }
 
 // ---- rendering --------------------------------------------------------------
@@ -281,6 +281,7 @@ function renderPlayer(el, color, isEngine, state) {
   } else {
     name = 'You';
     meta = G.sides[color];
+    if (viewPly === null && !game.end && !thinking && state.turn === color) meta += ' · <span class="yours">your move</span>';
   }
   el.innerHTML = `<div class="who"><span class="turn"></span><span class="name">${name}</span><span class="meta">${meta}</span></div>${G.sideDetail(state, color, el.id === 'top')}`;
   G.wireSide?.(el, board, !isEngine && viewPly === null && !game.end && !thinking);
@@ -323,8 +324,11 @@ function render(animate = false) {
   renderPlayers(state);
   renderMoves(ply);
   renderStatus();
+  renderReview();
   $('#takeback').disabled = !game.moves.length;
   $('#pass').hidden = !G.canPass;
+  // Passing after the other side passed ends the game: say so on the button.
+  $('#pass').textContent = game.moves.at(-1) === 'pass' ? 'Pass and count' : 'Pass';
   $('#pass').disabled = !(live && !game.end && !thinking && state.turn === game.color);
   $('#resign').disabled = !!game.end || !game.moves.length;
   $('#prev').disabled = ply === 0;
@@ -357,18 +361,35 @@ function renderMoves(ply) {
   else list.scrollTop = 0;
 }
 
+const SAID = { resign: 'You resigned', 'kishi-resigned': 'Kishi resigned' };
+
+/** The end of a game: a card over the board, or once dismissed, a slim bar beside it. */
 function renderStatus() {
   const over = $('#gameover');
-  if (!game.end || viewPly !== null) {
-    over.hidden = true;
+  const bar = $('#result-bar');
+  if (!game.end) {
+    over.hidden = bar.hidden = true;
     return;
   }
   const w = game.end.winner;
-  over.querySelector('.result-code').textContent = G.resultCode(w, game.end);
-  over.querySelector('.headline').textContent = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
-  const said = { resign: 'You resigned', 'kishi-resigned': 'Kishi resigned' };
-  over.querySelector('.reason').textContent = said[game.end.reason] ?? game.end.detail ?? G.reasons[game.end.reason] ?? '';
-  over.hidden = false;
+  const code = G.resultCode(w, game.end);
+  const headline = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
+  const reason = SAID[game.end.reason] ?? game.end.detail ?? G.reasons[game.end.reason] ?? '';
+  over.querySelector('.result-code').textContent = code;
+  over.querySelector('.headline').textContent = headline;
+  over.querySelector('.reason').textContent = reason;
+  over.hidden = !!game.end.dismissed || viewPly !== null;
+  $('#result-bar-code').textContent = code;
+  $('#result-bar-text').textContent = headline;
+  bar.hidden = !over.hidden;
+}
+
+/** While looking back through the game, say so, and offer the way back. */
+function renderReview() {
+  const banner = $('#review');
+  banner.hidden = viewPly === null;
+  if (viewPly === null) return;
+  $('#review-text').textContent = viewPly === 0 ? 'Start of the game' : `Move ${viewPly} of ${game.moves.length}`;
 }
 
 function goTo(ply) {
@@ -378,8 +399,47 @@ function goTo(ply) {
 
 // ---- dialogs and controls ---------------------------------------------------
 
+/** The sides a new game can be played from, drawn for the game `mod`. */
+function fillSides(dialog, mod) {
+  const first = mod.first;
+  const secondSide = Object.keys(mod.sides).find((x) => x !== first);
+  dialog.querySelector('[value="first"] span').textContent = mod.sideLabels.first;
+  dialog.querySelector('[value="second"] span').textContent = mod.sideLabels.second;
+  // Chess shows its king images; shogi and Go draw theirs, side by side under Random.
+  const king = (i, side, extra = '') => {
+    i.className = mod.icon ? `piece koma-piece ${extra}` : `piece ${extra} ${mod.kingClass[side]}`;
+    i.innerHTML = mod.icon ? mod.icon(side) : '';
+  };
+  king(dialog.querySelector('[value="first"] i'), first);
+  king(dialog.querySelector('[value="second"] i'), secondSide);
+  dialog.querySelector('.halves').classList.toggle('pair', !!mod.icon);
+  const halves = dialog.querySelectorAll('.halves i');
+  king(halves[0], first, 'half');
+  king(halves[1], secondSide, 'half');
+}
+
 function openNewGame() {
   const dialog = $('#newgame');
+  dialog.dataset.game = G.id;
+  const chips = $('#game-chips');
+  chips.replaceChildren();
+  for (const mod of Object.values(GAMES)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (mod.id === G.id ? ' on' : '');
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', String(mod.id === G.id));
+    b.textContent = mod.name;
+    b.onclick = () => {
+      dialog.dataset.game = mod.id;
+      chips.querySelectorAll('.chip').forEach((c) => {
+        c.classList.toggle('on', c === b);
+        c.setAttribute('aria-checked', String(c === b));
+      });
+      fillSides(dialog, mod);
+    };
+    chips.append(b);
+  }
   const levels = dialog.querySelector('.levels');
   levels.replaceChildren();
   for (let n = 1; n <= 8; n++) {
@@ -394,27 +454,45 @@ function openNewGame() {
     b.dataset.level = n;
     levels.append(b);
   }
-  dialog.querySelector('h2').textContent = `New ${G.name.toLowerCase()} game`;
-  const [first, second_] = [G.first, second()];
-  dialog.querySelector('[value="first"] span').textContent = G.sideLabels.first;
-  dialog.querySelector('[value="second"] span').textContent = G.sideLabels.second;
-  // Chess shows its king images; shogi draws its kings, and they sit side by side under Random.
-  const king = (i, side, extra = '') => {
-    i.className = G.icon ? `piece koma-piece ${extra}` : `piece ${extra} ${G.kingClass[side]}`;
-    i.innerHTML = G.icon ? G.icon(side) : '';
-  };
-  king(dialog.querySelector('[value="first"] i'), first);
-  king(dialog.querySelector('[value="second"] i'), second_);
-  dialog.querySelector('.halves').classList.toggle('pair', !!G.icon);
-  const halves = dialog.querySelectorAll('.halves i');
-  king(halves[0], first, 'half');
-  king(halves[1], second_, 'half');
+  fillSides(dialog, G);
   dialog.showModal();
+}
+
+/** Game tiles, for the menu and the switcher: tapping one switches to that game. */
+function renderGameTiles(container, after) {
+  container.replaceChildren();
+  for (const mod of Object.values(GAMES)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'game-tile' + (mod.id === G.id ? ' on' : '');
+    b.innerHTML = `<span class="glyph">${mod.icon ? mod.icon(mod.first, 'N') : '<i class="piece wN"></i>'}</span><span>${mod.name}</span>`;
+    b.onclick = () => {
+      after();
+      switchGame(mod.id);
+    };
+    container.append(b);
+  }
 }
 
 function wire() {
   $('#new').onclick = openNewGame;
-  $('#rematch').onclick = () => newGame(game.color === G.first ? 'second' : 'first', game.level);
+  const rematch = () => newGame(game.color === G.first ? 'second' : 'first', game.level);
+  $('#rematch').onclick = rematch;
+  $('#result-bar-rematch').onclick = rematch;
+  $('#gameover-close').onclick = () => {
+    game.end.dismissed = true;
+    saveGame();
+    render();
+  };
+  $('#review-back').onclick = () => goTo(game.moves.length);
+  $('#game-switch').onclick = () => {
+    renderGameTiles($('#switcher [data-games]'), () => $('#switcher').close());
+    $('#switcher').showModal();
+  };
+  // A tap outside the switcher closes it.
+  $('#switcher').addEventListener('click', (e) => {
+    if (e.target === $('#switcher')) $('#switcher').close();
+  });
   $('#again').onclick = openNewGame;
   $('#takeback').onclick = takeback;
   $('#pass').onclick = () => {
@@ -430,13 +508,25 @@ function wire() {
     render();
   };
   $('#flip').onclick = fromMenu(flip);
-  $('#resign').onclick = fromMenu(resign);
+  // Resigning takes a second tap, so a stray one does not end the game.
+  $('#resign').onclick = () => {
+    const b = $('#resign');
+    if (!b.classList.contains('armed')) {
+      b.classList.add('armed');
+      b.querySelector('span').textContent = 'Tap again to resign';
+      clearTimeout(b.timer);
+      b.timer = setTimeout(() => {
+        b.classList.remove('armed');
+        b.querySelector('span').textContent = 'Resign';
+      }, 3000);
+      return;
+    }
+    b.classList.remove('armed');
+    b.querySelector('span').textContent = 'Resign';
+    $('#settings-dialog').close();
+    resign();
+  };
   $('#share').onclick = fromMenu(share);
-  document.querySelectorAll('[data-switch]').forEach((b) => {
-    b.onclick = fromMenu(() => switchGame(b.dataset.switch));
-    const mod = GAMES[b.dataset.switch];
-    if (mod.icon) b.querySelector('.glyph').innerHTML = mod.icon(mod.first, 'N');
-  });
   $('#prev').onclick = () => goTo((viewPly ?? game.moves.length) - 1);
   $('#next').onclick = () => goTo((viewPly ?? game.moves.length) + 1);
   $('#first').onclick = () => goTo(0);
@@ -445,7 +535,7 @@ function wire() {
     $('#opt-eval').checked = settings.showEval;
     $('#opt-sound').checked = settings.sound;
     document.querySelectorAll('input[name="theme"]').forEach((r) => (r.checked = r.value === settings.theme));
-    document.querySelectorAll('[data-switch]').forEach((b) => b.classList.toggle('on', b.dataset.switch === G.id));
+    renderGameTiles($('#settings-dialog [data-games]'), () => $('#settings-dialog').close());
     $('#share span').textContent = G.exportLabel;
     renderEngineInfo();
     $('#settings-dialog').showModal();
@@ -460,11 +550,13 @@ function wire() {
     save(SETTINGS_KEY, settings);
     render();
   });
-  $('#newgame').addEventListener('close', (e) => {
+  $('#newgame').addEventListener('close', async (e) => {
     const dialog = e.target;
     const choice = dialog.returnValue;
     if (!['first', 'second', 'random'].includes(choice)) return;
     const level = Number(dialog.querySelector('.lvl.on')?.dataset.level ?? game.level);
+    // A new game of another kind switches to it first.
+    if (dialog.dataset.game !== G.id) await switchGame(dialog.dataset.game);
     newGame(choice, level);
   });
   document.addEventListener('keydown', (e) => {
