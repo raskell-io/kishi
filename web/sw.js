@@ -1,7 +1,7 @@
 // Offline play: serve the app from the cache, refresh it from the network in the background.
 // Also makes the page cross-origin isolated where the host cannot send the
 // headers itself (GitHub Pages), so the threaded engine can share memory.
-const CACHE = 'kishi-v9';
+const CACHE = 'kishi-v10';
 const SHELL = [
   './', 'index.html', 'style.css', 'app.js', 'board.js', 'shogi-board.js', 'engine.js', 'worker.js', 'helper.js',
   'games/chess.js', 'games/shogi.js', 'games/go.js', 'go-board.js', 'kishi.wasm', 'kishi-mt.wasm', 'shogi.wasm', 'go.wasm',
