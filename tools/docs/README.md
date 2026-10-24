@@ -126,6 +126,7 @@ since a network costs speed. Give a match the cores to itself when timing it.
 | `vs --lichess 7 --ms 1000 --games 20` | Stockfish set up like lichess's level 7 (skill, depth limit, think time) |
 | `vs --elo 2400` | Stockfish with its own UCI_Elo limit |
 | `vs --engine bin/kishi-old --nodes 10000 --games 600` | an older Kishi at fixed nodes: an A/B test of a search change |
+| `vs --lichess 7 --ms 3000 --kishi-threads 4` | the same, with Kishi on four threads, as the phone plays level 7 |
 | `shogi-vs --skill 10 --ms 500 --their-ms 500` | Fairy-Stockfish at a skill level from −20 to 20 |
 | `go-vs --level 1 --ms 1000 [--no-resign]` | GNU Go at a level from 1 to 10, Chinese rules, komi 7.5 |
 

@@ -75,6 +75,8 @@ fn main() {
     let engine: String = arg(&args, "--engine", "stockfish".into());
     let pairs: u32 = arg::<u32>(&args, "--games", 100) / 2;
     let threads: usize = arg(&args, "--threads", 8);
+    // Threads for Kishi within each game (the phone gives it four); 1 keeps A/B tests comparable.
+    let kishi_threads: usize = arg(&args, "--kishi-threads", 1);
     let ms: f64 = arg(&args, "--ms", 1000.0);
     let lichess: usize = arg(&args, "--lichess", 0);
     let elo_limit: u32 = arg(&args, "--elo", 0);
@@ -106,6 +108,7 @@ fn main() {
             let (brain, next, score, options, go, engine) = (brain.clone(), &next, &score, &options, &go, &engine);
             s.spawn(move || {
                 let mut kishi = brain.searcher(64);
+                let mut helpers: Vec<Searcher> = (1..kishi_threads).map(|_| kishi.helper()).collect();
                 let mut judge = Brain::Handwritten.searcher(4);
                 let mut other = Uci::start(engine, options, go.clone());
                 loop {
@@ -117,7 +120,7 @@ fn main() {
                     let (start, history) = random_opening(&mut rng, 8, &mut judge);
                     for kishi_white in [true, false] {
                         let limits = if nodes > 0 { Limits { nodes, ..Default::default() } } else { Limits::movetime(ms) };
-                        let result = play(&mut kishi, &mut other, start, history.clone(), kishi_white, limits);
+                        let result = play(&mut kishi, &mut helpers, &mut other, start, history.clone(), kishi_white, limits);
                         let mut sc = score.lock().unwrap();
                         match result {
                             2 => sc.0 += 1,
@@ -138,11 +141,12 @@ fn main() {
     let (w, d, l) = *score.lock().unwrap();
     let (e, err) = elo(w, d, l);
     let budget = if nodes > 0 { format!("{nodes} nodes") } else { format!("{ms} ms") };
-    println!("Kishi ({budget}/move) vs {label}: +{w} ={d} -{l}  elo {e:+.1} ± {err:.1}");
+    let budget = if kishi_threads > 1 { format!("{budget}/move, {kishi_threads} threads") } else { format!("{budget}/move") };
+    println!("Kishi ({budget}) vs {label}: +{w} ={d} -{l}  elo {e:+.1} ± {err:.1}");
 }
 
 /// One game; returns Kishi's result: 2 win, 1 draw, 0 loss.
-fn play(kishi: &mut Searcher, other: &mut Uci, start: Position, mut history: Vec<u64>, kishi_white: bool, limits: Limits) -> u8 {
+fn play(kishi: &mut Searcher, helpers: &mut [Searcher], other: &mut Uci, start: Position, mut history: Vec<u64>, kishi_white: bool, limits: Limits) -> u8 {
     kishi.clear();
     other.send("ucinewgame");
     let start_fen = start.fen();
@@ -162,7 +166,7 @@ fn play(kishi: &mut Searcher, other: &mut Uci, start: Position, mut history: Vec
         }
         let kishi_to_move = (pos.stm == WHITE) == kishi_white;
         let m = if kishi_to_move {
-            let r = kishi.search(&pos, &history, limits, &mut |_| {});
+            let r = kishi.search_parallel(helpers, &pos, &history, limits, &mut |_| {});
             // Adjudicate a game Kishi is sure about, either way.
             if r.score.abs() >= 1500 || r.score.abs() >= MATE_BOUND {
                 streak += 1;

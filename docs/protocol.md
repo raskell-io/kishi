@@ -98,11 +98,14 @@ taken off.
 | 4 | depth 4, 55 cp | depth 3, 50 cp | 5,000 |
 | 5 | depth 5, 28 cp | depth 4, 25 cp | 10,000 |
 | 6 | depth 7, 12 cp | depth 5, 12 cp | 20,000 |
-| 7 | 0.8 s, full strength | 1 s | 1.5 s |
-| 8 | 2.5 s, full strength | 3 s | 5 s |
+| 7 | 1.2M nodes, full strength, at most 3 s | 1 s | 1.5 s |
+| 8 | 4M nodes, full strength, at most 6 s | 3 s | 5 s |
 
 At levels 1 to 6 the chess and shogi engines score every legal move and pick
 one at random, weighting each by `exp((score − best) / T)`: a high temperature
 `T` makes mistakes likely, a low one rare, and a move into a seen mate is never
 chosen. Chess levels 4 and above also follow a small opening book while the
-game stays in it.
+game stays in it. Chess levels 7 and 8 are budgets in nodes rather than time,
+so they play the same strength on every device; the search stops starting new
+iterations at the budget, and stops outright at twice it or at the time cap,
+whichever comes first.

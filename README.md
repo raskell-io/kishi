@@ -60,8 +60,9 @@ the same in every one.
   evaluation (PeSTO's tapered piece-square tables).
 - **Levels.** Levels 1 to 6 score every legal move and pick one at random,
   favouring the better ones (a softmax whose temperature falls from 300 to 12
-  centipawns). Levels 7 and 8 think for 0.8 s and 2.5 s at full strength, and
-  vary their openings from a small book of main lines.
+  centipawns). Levels 7 and 8 play at full strength to a budget of 1.2M and 4M
+  nodes (capped at 3 s and 6 s), so they are as strong on a phone as on a
+  laptop, and vary their openings from a small book of main lines.
 
 <br clear="right">
 

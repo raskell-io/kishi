@@ -115,10 +115,15 @@ const BOOK: &[&str] = &[
 ];
 
 /// How strong each level plays: (depth of the root scoring, softmax temperature
-/// in centipawns) for the levels that make mistakes, think time for the rest.
+/// in centipawns) for the levels that make mistakes; a search budget for the rest.
+#[derive(Clone, Copy)]
 enum Level {
     Noisy(i32, f64),
+    /// Full strength for a fixed time (`go ms`).
     Think(f64),
+    /// Full strength for a fixed number of nodes, so the level plays the same on
+    /// every device, under a time cap so a slow one never waits too long.
+    Budget { nodes: u64, cap_ms: f64 },
 }
 
 fn level(n: u32) -> Level {
@@ -129,8 +134,8 @@ fn level(n: u32) -> Level {
         4 => Level::Noisy(4, 55.0),
         5 => Level::Noisy(5, 28.0),
         6 => Level::Noisy(7, 12.0),
-        7 => Level::Think(800.0),
-        _ => Level::Think(2500.0),
+        7 => Level::Budget { nodes: 1_200_000, cap_ms: 3_000.0 },
+        _ => Level::Budget { nodes: 4_000_000, cap_ms: 6_000.0 },
     }
 }
 
@@ -243,8 +248,13 @@ impl Web {
             );
         }
         let (best, score, depth, nodes) = match lvl {
-            Level::Think(ms) => {
-                let limits = Limits { soft_ms: ms * 0.5, hard_ms: ms, ..Default::default() };
+            Level::Think(_) | Level::Budget { .. } => {
+                let limits = match lvl {
+                    Level::Think(ms) => Limits { soft_ms: ms * 0.5, hard_ms: ms, ..Default::default() },
+                    // Stop starting iterations at the budget; stop outright at twice it or the cap.
+                    Level::Budget { nodes, cap_ms } => Limits { soft_nodes: nodes, nodes: nodes * 2, hard_ms: cap_ms, ..Default::default() },
+                    Level::Noisy(..) => unreachable!(),
+                };
                 #[cfg(feature = "threads")]
                 threads::start(threads::Job { pos, history: history.clone(), shared: self.searcher().shared() });
                 let r = self.searcher().search(&pos, &history, limits, &mut |_| {});
