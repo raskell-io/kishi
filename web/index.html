@@ -74,6 +74,7 @@
       </nav>
       <nav class="controls">
         <button id="new">New game</button>
+        <button id="pass" hidden>Pass</button>
         <button id="takeback">Takeback</button>
       </nav>
     </aside>
@@ -109,6 +110,7 @@
           <div class="games">
             <button type="button" class="game-tile" data-switch="chess"><span class="glyph"><i class="piece wN"></i></span><span>Chess</span></button>
             <button type="button" class="game-tile" data-switch="shogi"><span class="glyph"></span><span>Shogi</span></button>
+            <button type="button" class="game-tile" data-switch="go"><span class="glyph"></span><span>Go</span></button>
           </div>
         </section>
 
@@ -142,8 +144,8 @@
         </section>
 
         <section class="about">
-          <p>Kishi plays chess and shogi with engines written in Rust and compiled to WebAssembly. It thinks on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
-          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces are drawn by Kishi, lettered in Noto Sans JP (OFL). Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
+          <p>Kishi plays chess, shogi and Go with engines written in Rust and compiled to WebAssembly. It thinks on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
+          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces and Go stones are drawn by Kishi; the kanji are Noto Sans JP (OFL). Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
         </section>
       </div>
     </form>

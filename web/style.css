@@ -482,7 +482,7 @@ dialog.overlay form {
 }
 .game-tile:hover { background: rgba(236, 230, 217, 0.09); }
 .game-tile.on { box-shadow: inset 0 0 0 1px var(--accent); }
-.glyph { width: 34px; height: 34px; display: grid; place-items: center; flex: none; }
+.glyph { min-width: 34px; height: 34px; display: grid; place-items: center; flex: none; }
 .glyph .piece { position: static; width: 34px; height: 34px; display: block; }
 
 /* ---- shogi ---- */
@@ -546,3 +546,49 @@ svg.koma { display: block; width: 100%; height: 100%; overflow: visible; }
 }
 .halves.pair { display: flex; align-items: center; justify-content: center; gap: 3px; width: auto; }
 .halves.pair .piece { position: relative; inset: auto; width: 24px; height: 27px; clip-path: none; }
+
+/* ---- go ---- */
+
+.games { grid-template-columns: repeat(3, 1fr); }
+.game-tile { flex-direction: column; align-items: flex-start; gap: 8px; }
+.glyph svg.stone { width: 28px; height: 30px; }
+
+.board.go { container-type: size; background: var(--light-sq); --go-line: color-mix(in srgb, var(--dark-sq) 45%, #1b1a16); }
+.board.go .grid { position: absolute; inset: 0; width: 100%; height: 100%; }
+.board.go .grid line { stroke: var(--go-line); stroke-width: 0.045; }
+.board.go .grid circle { fill: var(--go-line); }
+.board.go .point { position: absolute; top: 0; left: 0; width: 5.2632%; height: 5.2632%; display: grid; place-items: center; }
+.board.go .point svg.stone { width: 92%; height: 96%; }
+.board.go .point.placed svg { animation: place 0.18s ease-out; }
+@keyframes place { from { scale: 1.12; opacity: 0.4; } }
+.board.go .point.dead svg { opacity: 0.35; }
+.board.go .point.ghost svg { opacity: 0.45; }
+.board.go .cross { position: absolute; background: var(--accent); opacity: 0.5; }
+.board.go .cross.row { left: 0; right: 0; height: 1px; }
+.board.go .cross.col { top: 0; bottom: 0; width: 1px; }
+.board.go .last::after { content: ""; width: 26%; height: 26%; border-radius: 50%; background: var(--accent); margin-top: -8%; }
+.board.go .area::after { content: ""; width: 30%; height: 30%; border-radius: 2px; }
+.board.go .area.black::after { background: #1b1a16; }
+.board.go .area.white::after { background: #f6f2e8; box-shadow: 0 0 0 1px #1b1a16; }
+.board.go .stones { z-index: 2; }
+.board.go .marks { z-index: 3; }
+.board.go .hints { z-index: 4; }
+.board.go .coord { font: 500 clamp(6px, 1.5cqw, 9px)/1 var(--mono); color: var(--go-line); opacity: 0.8; }
+.board.go .coord.file { bottom: 0; width: 5.2632%; text-align: center; }
+.board.go .coord.rank { left: 1px; height: 5.2632%; display: flex; align-items: center; }
+
+svg.stone { display: block; overflow: visible; }
+svg.stone circle { stroke: #1b1a16; stroke-width: 5; }
+svg.stone.white .face { fill: url(#koma-ivory); }
+svg.stone.white .edge { fill: #cdbf9f; }
+svg.stone.black .face { fill: #26271f; }
+svg.stone.black .edge { fill: #5d5b52; }
+.go-note { font: 12px var(--mono); color: var(--muted); }
+.controls #pass { color: var(--strong); }
+/* Off the board, black stones sit on dark surfaces: give them a soft rim. */
+.color svg.stone.black circle, .glyph svg.stone.black circle { stroke: #8a857a; }
+.color .koma-piece svg.stone { width: 40px; height: 42px; }
+.stone-pair { position: relative; display: block; width: 40px; height: 32px; }
+.stone-pair svg { position: absolute; width: 23px; height: 25px; }
+.stone-pair svg:first-child { left: 0; top: 0; }
+.stone-pair svg:last-child { right: 0; bottom: 0; }

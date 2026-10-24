@@ -11,3 +11,4 @@ publish = false
 [dependencies]
 kishi-engine = { path = "../engine" }
 kishi-shogi = { path = "../shogi" }
+kishi-go = { path = "../go" }

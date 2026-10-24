@@ -4,8 +4,9 @@
 import { loadEngine, positionCommand } from './engine.js';
 import chess from './games/chess.js';
 import shogi from './games/shogi.js';
+import go from './games/go.js';
 
-const GAMES = { chess, shogi };
+const GAMES = { chess, shogi, go };
 const LEVEL_NAMES = ['', 'Novice', 'Beginner', 'Casual', 'Intermediate', 'Club', 'Strong', 'Expert', 'Maximum'];
 const SETTINGS_KEY = 'kishi.settings.v1';
 // Chess keeps the key it had before there were other games.
@@ -101,7 +102,11 @@ function startWorker() {
       if (data.token !== token) return;
       thinking = false;
       lastInfo = data;
-      play(data.move);
+      if (data.move === 'resign') {
+        game.end = { reason: 'kishi-resigned', winner: game.color };
+        saveGame();
+        render();
+      } else play(data.move);
     }, Math.max(0, 350 - (performance.now() - sentAt)));
   };
 }
@@ -144,7 +149,10 @@ function play(move) {
   game.moves.push(move);
   game.sans.push(san);
   const state = liveState();
-  if (state.result) game.end = { reason: state.result, winner: state.result === 'checkmate' ? other(state.turn) : null };
+  if (state.result) {
+    // A game that counts its own result (Go) does so; the others know it from the rules.
+    game.end = G.finish ? G.finish(rules, state) : { reason: state.result, winner: state.result === 'checkmate' ? other(state.turn) : null };
+  }
   saveGame();
   click(G.isCapture(san));
   viewPly = null;
@@ -267,7 +275,8 @@ function renderPlayer(el, color, isEngine, state) {
     meta = `level ${game.level}`;
     if (thinking) meta = '<span class="breath"></span>thinking';
     else if (settings.showEval && lastInfo) {
-      meta += ` · <span class="score">${lastInfo.book ? 'book' : `${formatScore(lastInfo)} d${lastInfo.depth}`}</span>`;
+      const text = G.evalText ? G.evalText(lastInfo) : lastInfo.book ? 'book' : `${formatScore(lastInfo)} d${lastInfo.depth}`;
+      meta += ` · <span class="score">${text}</span>`;
     }
   } else {
     name = 'You';
@@ -310,11 +319,13 @@ function render(animate = false) {
   const live = viewPly === null;
   const dests = live && !game.end && !thinking && state.turn === game.color ? G.dests(state.legal) : new Map();
   const orientation = flipped ? other(game.color) : game.color;
-  G.show(board, { state, lastMove: ply > 0 ? game.moves[ply - 1] : null, dests, orientation, animate });
+  G.show(board, { state, lastMove: ply > 0 ? game.moves[ply - 1] : null, dests, orientation, animate, end: game.end, live });
   renderPlayers(state);
   renderMoves(ply);
   renderStatus();
   $('#takeback').disabled = !game.moves.length;
+  $('#pass').hidden = !G.canPass;
+  $('#pass').disabled = !(live && !game.end && !thinking && state.turn === game.color);
   $('#resign').disabled = !!game.end || !game.moves.length;
   $('#prev').disabled = ply === 0;
   $('#next').disabled = live;
@@ -353,9 +364,10 @@ function renderStatus() {
     return;
   }
   const w = game.end.winner;
-  over.querySelector('.result-code').textContent = G.resultCode(w);
+  over.querySelector('.result-code').textContent = G.resultCode(w, game.end);
   over.querySelector('.headline').textContent = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
-  over.querySelector('.reason').textContent = game.end.reason === 'resign' ? 'You resigned' : (G.reasons[game.end.reason] ?? '');
+  const said = { resign: 'You resigned', 'kishi-resigned': 'Kishi resigned' };
+  over.querySelector('.reason').textContent = said[game.end.reason] ?? game.end.detail ?? G.reasons[game.end.reason] ?? '';
   over.hidden = false;
 }
 
@@ -405,6 +417,9 @@ function wire() {
   $('#rematch').onclick = () => newGame(game.color === G.first ? 'second' : 'first', game.level);
   $('#again').onclick = openNewGame;
   $('#takeback').onclick = takeback;
+  $('#pass').onclick = () => {
+    if (viewPly === null && !game.end && !thinking && liveState().turn === game.color) play('pass');
+  };
   // Game actions live in the menu: close it, then act.
   const fromMenu = (action) => () => {
     $('#settings-dialog').close();

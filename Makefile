@@ -1,6 +1,7 @@
 PORT ?= 8647
 WASM := target/wasm32-unknown-unknown/release/kishi_engine.wasm
 WASM_SHOGI := target/wasm32-unknown-unknown/release/kishi_shogi.wasm
+WASM_GO := target/wasm32-unknown-unknown/release/kishi_go.wasm
 WASM_MT := target/mt/wasm32-unknown-unknown/release/kishi_engine.wasm
 # Shared memory and the exports helper workers need to set up their own stack and TLS.
 MT_FLAGS := -C target-feature=+atomics,+bulk-memory,+mutable-globals,+simd128,+nontrapping-fptoint \
@@ -14,7 +15,7 @@ THREADS ?= $(shell sysctl -n hw.ncpu 2>/dev/null || nproc)
 .PHONY: build build-threads serve site test tools bench clean
 
 # The engines, compiled for the web page: chess (with nets/kishi.nnue embedded),
-# single-threaded and, with a nightly toolchain, threaded; and shogi.
+# single-threaded and, with a nightly toolchain, threaded; shogi; and Go.
 build:
 	cargo build --release --target wasm32-unknown-unknown -p kishi-engine --features web
 	@if command -v wasm-opt >/dev/null; then wasm-opt -O3 $(WASM_OPT) $(WASM) -o web/kishi.wasm; \
@@ -24,6 +25,10 @@ build:
 	@if command -v wasm-opt >/dev/null; then wasm-opt -O3 $(WASM_OPT) $(WASM_SHOGI) -o web/shogi.wasm; \
 	else cp $(WASM_SHOGI) web/shogi.wasm; fi
 	@ls -l web/shogi.wasm | awk '{print "web/shogi.wasm: " $$5 " bytes"}'
+	cargo build --release --target wasm32-unknown-unknown -p kishi-go --features web
+	@if command -v wasm-opt >/dev/null; then wasm-opt -O3 $(WASM_OPT) $(WASM_GO) -o web/go.wasm; \
+	else cp $(WASM_GO) web/go.wasm; fi
+	@ls -l web/go.wasm | awk '{print "web/go.wasm: " $$5 " bytes"}'
 	@if rustup toolchain list 2>/dev/null | grep -q nightly; then $(MAKE) --no-print-directory build-threads; \
 	else echo "no nightly toolchain: skipping web/kishi-mt.wasm"; rm -f web/kishi-mt.wasm; fi
 

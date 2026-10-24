@@ -1,0 +1,18 @@
+[package]
+name = "kishi-go"
+description = "Kishi's Go engine: rules, area scoring and Monte Carlo tree search, compiled to WebAssembly"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# Exports the C ABI the web page calls. Only for building web/go.wasm.
+web = []
+
+[dependencies]
+kishi-engine = { path = "../engine" }

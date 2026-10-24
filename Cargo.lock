@@ -7,6 +7,13 @@ name = "kishi-engine"
 version = "0.1.0"
 
 [[package]]
+name = "kishi-go"
+version = "0.1.0"
+dependencies = [
+ "kishi-engine",
+]
+
+[[package]]
 name = "kishi-shogi"
 version = "0.1.0"
 dependencies = [
@@ -18,5 +25,6 @@ name = "kishi-tools"
 version = "0.1.0"
 dependencies = [
  "kishi-engine",
+ "kishi-go",
  "kishi-shogi",
 ]
