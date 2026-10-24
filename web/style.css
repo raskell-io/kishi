@@ -211,17 +211,6 @@ svg { width: 20px; height: 20px; flex: none; }
 }
 #promotion:not(.shogi) button:hover { border-radius: 12%; background-color: var(--accent); }
 
-#gameover { position: absolute; inset: 0; z-index: 15; display: grid; place-items: center; pointer-events: none; }
-#gameover .card {
-  pointer-events: auto;
-  background: rgba(14, 15, 13, 0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  padding: 24px 28px 22px;
-  border-radius: 14px;
-  text-align: center;
-  min-width: 240px;
-}
 .result-code { font-size: 13px; color: var(--accent); letter-spacing: 0.08em; }
 .headline { font-size: 26px; font-weight: 500; color: var(--strong); margin-top: 4px; }
 .reason { color: var(--muted); font-size: 14px; }
@@ -638,8 +627,6 @@ dialog.sheet[open] { animation: drop-in 0.18s ease-out; }
 button.link { padding: 6px 12px; border-radius: 999px; color: var(--strong); font-weight: 500; font-size: 14px; }
 button.link:hover { background: var(--raise-2); }
 
-#gameover .card { position: relative; }
-#gameover-close { position: absolute; top: 6px; right: 6px; width: 34px; height: 34px; }
 
 .game-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
 .chip {
@@ -656,3 +643,42 @@ button.link:hover { background: var(--raise-2); }
 .meta .yours { color: var(--text); }
 .tile.armed { background: rgba(216, 100, 74, 0.16); }
 .tile.armed svg, .tile.armed span { color: var(--accent); }
+
+/* ---- the result, beside the board ---- */
+
+.banner.result { flex-wrap: wrap; padding: 10px 8px 10px 14px; gap: 8px 12px; }
+.result-text { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.result-text b { font-size: 15px; }
+#result-bar-text { color: var(--strong); font-weight: 500; }
+#result-bar-text + .reason:not(:empty)::before { content: " · "; color: var(--faint); }
+.banner .reason { color: var(--muted); }
+.result-actions { display: flex; gap: 4px; margin-left: auto; }
+button.link.primary { background: var(--strong); color: var(--ink); }
+button.link.primary:hover { background: #fff; }
+.banner.arrive { animation: arrive 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes arrive { from { opacity: 0; transform: translateY(6px); } }
+
+/* ---- wide screens: the board in the middle, players left, moves right ---- */
+
+@media (min-width: 1100px) {
+  .bar { max-width: 1440px; }
+  .app {
+    --board: min(calc(100dvh - 130px), 720px);
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) var(--board) minmax(280px, 1fr);
+    grid-template-rows: auto 1fr auto;
+    column-gap: 44px;
+    max-width: 1440px;
+    align-items: start;
+    padding: 8px var(--gutter) 40px;
+  }
+  .play { display: contents; }
+  .board-wrap { grid-column: 2; grid-row: 1 / 4; width: var(--board); }
+  #top, #bottom { grid-column: 1; flex-direction: column; align-items: flex-end; gap: 10px; padding: 0; min-height: 0; text-align: right; }
+  #top { grid-row: 1; }
+  #bottom { grid-row: 3; align-self: end; flex-direction: column-reverse; }
+  .player .who { justify-content: flex-end; }
+  .player .captured, .player .hand { justify-content: flex-end; max-width: 240px; }
+  .hand-piece { width: 40px; height: 46px; }
+  .side { grid-column: 3; grid-row: 1 / 4; align-self: center; max-width: 340px; width: 100%; }
+}

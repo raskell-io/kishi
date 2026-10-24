@@ -54,18 +54,6 @@
       <div class="board-wrap">
         <div id="board"></div>
         <div id="promotion" hidden></div>
-        <div id="gameover" hidden>
-          <div class="card">
-            <button id="gameover-close" class="icon close" aria-label="Show the board"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-            <div class="result-code mono"></div>
-            <div class="headline"></div>
-            <div class="reason"></div>
-            <div class="actions">
-              <button id="rematch" class="btn primary">Rematch</button>
-              <button id="again" class="btn">New game</button>
-            </div>
-          </div>
-        </div>
       </div>
       <div class="player" id="bottom"></div>
     </section>
@@ -76,8 +64,14 @@
         <button id="review-back" class="link">Back to game</button>
       </div>
       <div class="banner result" id="result-bar" hidden>
-        <span><b class="mono" id="result-bar-code"></b> <span id="result-bar-text"></span></span>
-        <button id="result-bar-rematch" class="link">Rematch</button>
+        <div class="result-text">
+          <b class="mono" id="result-bar-code"></b>
+          <span><span id="result-bar-text"></span><span class="reason" id="result-bar-reason"></span></span>
+        </div>
+        <div class="result-actions">
+          <button id="result-bar-rematch" class="link primary">Rematch</button>
+          <button id="result-bar-new" class="link">New game</button>
+        </div>
       </div>
       <div class="moves" id="moves"></div>
       <nav class="history">

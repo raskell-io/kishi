@@ -32,7 +32,8 @@ the record writes them, `color` the side you play), renders it, and asks:
 
 It also draws what every game shares: the player rows, the move list (paired
 for chess, numbered singly for shogi and Go), history navigation with the
-review banner, the result card and bar, the new-game sheet, the game switcher,
+review banner, the result bar (beside the board, never over it, so the final
+position and the way it was won stay in view), the new-game sheet, the game switcher,
 the menu with settings and engine details, and sounds.
 
 ## The game module contract
@@ -135,6 +136,15 @@ single-threaded.
 
 A saved game whose moves no longer replay (after a rules change) is quietly
 replaced by a new one.
+
+## Layout
+
+On phones the board fills the width with a player row above and below it, and
+the result, moves and controls underneath. From 860 px the moves and controls
+move beside the board. From 1,100 px the board sits in the middle of three
+columns: the players on the left, Kishi level with the board's top and you
+with its bottom (a shogi hand then rests beside the board like a piece stand),
+and the moves, banners and controls on the right.
 
 ## Style
 

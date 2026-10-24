@@ -363,25 +363,21 @@ function renderMoves(ply) {
 
 const SAID = { resign: 'You resigned', 'kishi-resigned': 'Kishi resigned' };
 
-/** The end of a game: a card over the board, or once dismissed, a slim bar beside it. */
+/** The end of a game, beside the board so the final position stays in view. */
 function renderStatus() {
-  const over = $('#gameover');
   const bar = $('#result-bar');
-  if (!game.end) {
-    over.hidden = bar.hidden = true;
-    return;
-  }
+  const was = !bar.hidden;
+  bar.hidden = !game.end;
+  if (!game.end) return;
   const w = game.end.winner;
-  const code = G.resultCode(w, game.end);
-  const headline = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
-  const reason = SAID[game.end.reason] ?? game.end.detail ?? G.reasons[game.end.reason] ?? '';
-  over.querySelector('.result-code').textContent = code;
-  over.querySelector('.headline').textContent = headline;
-  over.querySelector('.reason').textContent = reason;
-  over.hidden = !!game.end.dismissed || viewPly !== null;
-  $('#result-bar-code').textContent = code;
-  $('#result-bar-text').textContent = headline;
-  bar.hidden = !over.hidden;
+  $('#result-bar-code').textContent = G.resultCode(w, game.end);
+  $('#result-bar-text').textContent = !w ? 'Draw' : w === game.color ? 'You win' : 'Kishi wins';
+  $('#result-bar-reason').textContent = SAID[game.end.reason] ?? game.end.detail ?? G.reasons[game.end.reason] ?? '';
+  if (!was) {
+    bar.classList.remove('arrive');
+    void bar.offsetWidth;
+    bar.classList.add('arrive');
+  }
 }
 
 /** While looking back through the game, say so, and offer the way back. */
@@ -477,13 +473,8 @@ function renderGameTiles(container, after) {
 function wire() {
   $('#new').onclick = openNewGame;
   const rematch = () => newGame(game.color === G.first ? 'second' : 'first', game.level);
-  $('#rematch').onclick = rematch;
   $('#result-bar-rematch').onclick = rematch;
-  $('#gameover-close').onclick = () => {
-    game.end.dismissed = true;
-    saveGame();
-    render();
-  };
+  $('#result-bar-new').onclick = openNewGame;
   $('#review-back').onclick = () => goTo(game.moves.length);
   $('#game-switch').onclick = () => {
     renderGameTiles($('#switcher [data-games]'), () => $('#switcher').close());
@@ -493,7 +484,6 @@ function wire() {
   $('#switcher').addEventListener('click', (e) => {
     if (e.target === $('#switcher')) $('#switcher').close();
   });
-  $('#again').onclick = openNewGame;
   $('#takeback').onclick = takeback;
   $('#pass').onclick = () => {
     if (viewPly === null && !game.end && !thinking && liveState().turn === game.color) play('pass');
