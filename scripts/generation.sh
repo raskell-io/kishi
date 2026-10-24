@@ -4,7 +4,7 @@
 #   scripts/generation.sh N [positions] [epochs]
 #
 #   1. train nets/genN.nnue on the self-play data of the last three generations
-#   2. play it against the previous generation and log the result
+#   2. play it against the previous generation, at equal nodes and at equal time, and log both
 #   3. let it play itself to produce data/genN.bin for the next generation
 #
 # Generation 0 is the hand-written evaluation; its games are data/gen0.bin.
@@ -23,10 +23,16 @@ cargo build --release -p kishi-tools
 echo "== gen $n: training on $data"
 ./target/release/train --data "$data" --out "nets/gen$n.nnue" --epochs "$epochs" 2>&1 | tee "data/train$n.log"
 
-echo "== gen $n: match against $prev"
+echo "== gen $n: match against $prev at equal nodes"
 result=$(./target/release/arena --a "nets/gen$n.nnue" --b "$prev" --games 400 --nodes 20000 | tail -1)
 echo "$result"
 echo "- $(date +%F) gen $n, trained on ${data//,/ }: $result" >> nets/LOG.md
 
+# Equal time is what the app plays at; a network must earn its speed cost.
+echo "== gen $n: match against $prev at equal time"
+result_time=$(./target/release/arena --a "nets/gen$n.nnue" --b "$prev" --games 300 --ms 100 --threads 5 | tail -1)
+echo "$result_time"
+echo "  equal time (100 ms): $result_time" >> nets/LOG.md
+
 echo "== gen $n: self-play"
-./target/release/datagen --brain "nets/gen$n.nnue" --out "data/gen$n.bin" --positions "$positions" --seed "$((n * 1000))" 2>&1 | tail -1
+./target/release/datagen --brain "nets/gen$n.nnue" --out "data/gen$n.bin" --positions "$positions" --seed "$((n * 1000))" --threads "${THREADS:-8}" 2>&1 | tail -1
