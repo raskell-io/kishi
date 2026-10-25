@@ -44,7 +44,7 @@ Kishi is also an amateur research project: how far one person with one laptop
 game AI, in 2026, and end with an opponent people actually play. Every
 experiment is recorded in [the notebook](docs/study/notebook.md), including the
 ones that failed, and the results are written up as a series on raskell.io,
-[*Learning to Play*](https://raskell.io/series/learning-to-play/), which uses
+[*Learning to Play*](https://raskell.io/articles/learning-to-play/), which uses
 chess, shogi and Go to show how search, learned evaluation, self-play and
 Monte Carlo tree search work. [The study](docs/study/README.md) has the
 questions, the experiments and the rules.

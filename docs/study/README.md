@@ -12,7 +12,7 @@ evaluation (NNUE), self-play as the training signal, Monte Carlo tree search,
 and policy and value networks. The laptop is a MacBook Pro with an Apple M4.
 The games are chess, shogi and Go, chosen because each breaks what worked on
 the one before. The results are written up as a series of articles on
-raskell.io, [*Learning to Play*](https://raskell.io/series/learning-to-play/),
+raskell.io, [*Learning to Play*](https://raskell.io/articles/learning-to-play/),
 and everything the articles measure is recorded here first.
 
 | | |
@@ -76,7 +76,7 @@ throughput overnight is the same.
 
 | Part | Title | Draws on | State |
 |---|---|---|---|
-| 1 | Learning to Play | the plan, the machine, the rules | drafted |
+| 1 | Learning to Play | the book, the three games, the laptop, the first numbers | published 2026-10-25 |
 | 2 | What the Network Has to Beat | E1, E2 | drafted |
 | 3 | An Evaluation You Can Learn | the network's design, E8 | drafted |
 | 4 | The Engine Plays Itself | E3, E4, E5 | drafted |
