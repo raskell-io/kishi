@@ -144,3 +144,17 @@ Paused on 2026-10-25 with SIGSTOP at 5,623,296 records (70%) because the
 laptop was needed; the run had taken the machine for itself. Learned: run
 long jobs with `nice -n 20`. The file is append-only and resumes where it
 stopped; the chain to generations 2 and 3 is waiting behind it.
+
+## 2026-10-25 · Search depth and speed on one core (E8, hand-written evaluation)
+
+`kishi` over UCI, one thread, `go movetime 500`, hand-written evaluation:
+
+```text
+startpos:                 depth 20, 1,565,303 nodes, 3.37M nodes/s
+middlegame (move 8, QGD): depth 17,   934,163 nodes, 3.00M nodes/s
+kishi bench (12 positions, depth 12): 674,843 nodes, 3.68M nodes/s
+```
+
+Learned: at the app's half-second budget the engine sees 17 to 20 plies on one
+core. The same figures with `--net nets/gen1.nnue` are still to be taken; the
+2.5 × per-node tax so far comes from self-play throughput only.
