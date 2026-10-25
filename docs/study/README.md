@@ -77,7 +77,7 @@ throughput overnight is the same.
 | Part | Title | Draws on | State |
 |---|---|---|---|
 | 1 | Learning to Play | the book, the three games, the laptop, the first numbers | published 2026-10-25 |
-| 2 | What the Network Has to Beat | E1, E2 | drafted |
+| 2 | Three Parts and No Brain | E1, E2, E8 | drafted |
 | 3 | An Evaluation You Can Learn | the network's design, E8 | drafted |
 | 4 | The Engine Plays Itself | E3, E4, E5 | drafted |
 | 5 | Equal Nodes Is Not Equal Time | E5, E6, E7, E8 | waiting on the loop |
