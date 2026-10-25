@@ -16,6 +16,7 @@ Quiet, offline once installed, and multi-threaded in the browser.</p>
   <a href="#how-it-learns-self-play">How it learns</a> ·
   <a href="#strength">Strength</a> ·
   <a href="#build">Build</a> ·
+  <a href="docs/study/README.md">The study</a> ·
   <a href="docs/README.md">Docs</a>
 </p>
 
@@ -35,6 +36,18 @@ server and no account. On an iPhone, open the site in Safari and choose
 Switch games from the name beside the wordmark, or in New game. Each game
 keeps its own saved game; all eight levels, takeback, history and export work
 the same in every one.
+
+## A study in public
+
+Kishi is also an amateur research project: how far one person with one laptop
+(a MacBook Pro with an Apple M4) can take the methods behind thirty years of
+game AI, in 2026, and end with an opponent people actually play. Every
+experiment is recorded in [the notebook](docs/study/notebook.md), including the
+ones that failed, and the results are written up as a series on raskell.io,
+[*Learning to Play*](https://raskell.io/series/learning-to-play/), which uses
+chess, shogi and Go to show how search, learned evaluation, self-play and
+Monte Carlo tree search work. [The study](docs/study/README.md) has the
+questions, the experiments and the rules.
 
 <img src="docs/screenshot-mobile.png" alt="Kishi on a phone" width="260" align="right">
 

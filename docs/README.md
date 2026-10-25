@@ -9,6 +9,7 @@ built and how to change it.
 | [Architecture](architecture.md) | How the pieces fit: crates, wasm builds, the worker, the page |
 | [Engine protocol](protocol.md) | The text commands every engine answers, and their JSON replies |
 | [Brand](brand/README.md) | The seal, the wordmark, colours and type, and how they are generated |
+| [The study](study/README.md) | Kishi as a research object: the questions, the experiments, the notebook of every run, and the article series |
 | [Chess engine](../engine/docs/README.md) | Board, move generation, search, evaluation, threads |
 | [The network](../engine/docs/nnue.md) | NNUE architecture, file format, quantisation |
 | [Shogi engine](../shogi/docs/README.md) | Rules, notation, search and evaluation for shogi |
