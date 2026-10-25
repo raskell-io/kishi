@@ -3,18 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <title>Kishi · chess engine in your browser</title>
-  <meta name="description" content="Play chess against Kishi, a Rust chess engine compiled to WebAssembly that runs on your device, multi-threaded and offline.">
+  <title>Kishi · chess, shogi and Go in your browser</title>
+  <meta name="description" content="Play chess, shogi and Go against engines written in Rust and compiled to WebAssembly. They run on your device, offline, from novice to full strength.">
+  <meta name="author" content="Raffael Schneider">
+  <link rel="canonical" href="https://kishi.raskell.io/">
   <meta name="theme-color" content="#0e0f0d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Kishi">
+  <meta property="og:type" content="website">
   <meta property="og:title" content="Kishi">
-  <meta property="og:description" content="A Rust chess engine in WebAssembly. Runs on your device, multi-threaded, offline.">
+  <meta property="og:description" content="Chess, shogi and Go against Rust engines in WebAssembly. They run on your device, offline.">
   <meta property="og:image" content="https://kishi.raskell.io/og.png">
   <meta property="og:url" content="https://kishi.raskell.io/">
   <meta name="twitter:card" content="summary_large_image">
+  <link rel="alternate" type="text/markdown" title="llms.txt" href="/llms.txt">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon-180.png">
@@ -25,6 +29,42 @@
   <link rel="modulepreload" href="engine.js">
   <link rel="preload" href="kishi.wasm" as="fetch" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": ["VideoGame", "SoftwareApplication"],
+        "@id": "https://kishi.raskell.io/#app",
+        "name": "Kishi",
+        "description": "Chess, shogi and Go against engines written in Rust and compiled to WebAssembly. They play in the browser on your own device, offline, from novice to full strength, on a quiet board.",
+        "url": "https://kishi.raskell.io/",
+        "image": "https://kishi.raskell.io/og.png",
+        "applicationCategory": "GameApplication",
+        "genre": ["Chess", "Shogi", "Go", "Board game"],
+        "gamePlatform": "Web browser",
+        "operatingSystem": "Web browser",
+        "playMode": "SinglePlayer",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "isAccessibleForFree": true,
+        "license": "https://opensource.org/licenses/MIT",
+        "codeRepository": "https://github.com/raskell-io/kishi",
+        "sameAs": ["https://github.com/raskell-io/kishi", "https://raskell.io/apps/"],
+        "inLanguage": "en",
+        "author": { "@type": "Person", "@id": "https://raskell.io/#person", "name": "Raffael Schneider", "url": "https://raskell.io/" },
+        "creator": { "@type": "Person", "@id": "https://raskell.io/#person", "name": "Raffael Schneider", "url": "https://raskell.io/" }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://kishi.raskell.io/#website",
+        "name": "Kishi",
+        "url": "https://kishi.raskell.io/",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://raskell.io/#person" }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <svg width="0" height="0" style="position: absolute" aria-hidden="true">
@@ -52,7 +92,13 @@
     <section class="play">
       <div class="player" id="top"></div>
       <div class="board-wrap">
-        <div id="board"></div>
+        <div id="board">
+          <!-- Text for readers without JavaScript; the app replaces this element when it starts. -->
+          <h1>Kishi: chess, shogi and Go in your browser</h1>
+          <p>Play chess, shogi or Go against engines written in Rust and compiled to WebAssembly. The engines think in Web Workers on your own device, with no server and no account, and the app works offline once installed.</p>
+          <p>Choose one of eight levels, from Novice to Maximum, then take back moves, step through the history, and copy the game record.</p>
+          <p><a href="https://github.com/raskell-io/kishi">Source on GitHub</a> (MIT) · <a href="https://raskell.io/apps/">More apps</a> · by <a href="https://raskell.io/" rel="author">Raffael Schneider</a></p>
+        </div>
         <div id="promotion" hidden></div>
       </div>
       <div class="player" id="bottom"></div>
@@ -156,7 +202,7 @@
 
         <section class="about">
           <p>Kishi plays chess, shogi and Go with engines written in Rust and compiled to WebAssembly. It thinks on this device, in Web Workers, and works offline. Its evaluation network is learning by self-play; until it beats the hand-written evaluation, Kishi plays with that.</p>
-          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces and Go stones are drawn by Kishi; the kanji are Noto Sans JP (OFL). Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a></p>
+          <p class="muted">Chess pieces: Chessnut by Alexis Luengas (Apache 2.0). Shogi pieces and Go stones are drawn by Kishi; the kanji are Noto Sans JP (OFL). Type: Geist (OFL). <a href="https://github.com/raskell-io/kishi" target="_blank" rel="noopener">Source on GitHub</a> · by <a href="https://raskell.io/" target="_blank" rel="author noopener">Raffael Schneider</a></p>
         </section>
       </div>
     </form>

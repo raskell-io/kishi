@@ -1,0 +1,20 @@
+# Kishi
+
+> Chess, shogi and Go against engines written in Rust and compiled to WebAssembly, played in the browser on your own device.
+
+Kishi (騎士, knight) is a web app for playing chess, shogi and Go against computer engines written from scratch in Rust. The page renders the board; the engines think in Web Workers on your machine, with no server and no account, and the app works offline once installed (on an iPhone, open it in Safari and choose Share, then Add to Home Screen). Each game has eight levels, from Novice to Maximum, with takeback, move history and export of the game record. It is for anyone who wants a quiet opponent at any strength. Kishi is also a study in public of the methods behind game AI (search, learned evaluation, self-play and Monte Carlo tree search), written up on raskell.io. MIT licence.
+
+## Links
+
+- [Play Kishi](https://kishi.raskell.io/)
+- [Source code](https://github.com/raskell-io/kishi): engines, self-play tools and the web app
+- [Documentation](https://github.com/raskell-io/kishi/blob/main/docs/README.md)
+- [Kishi on raskell.io](https://raskell.io/apps/)
+- [Author: Raffael Schneider](https://raskell.io/about/)
+
+## Optional
+
+- [Learning to Play](https://raskell.io/articles/learning-to-play/): the article series that uses chess, shogi and Go to explain search, learned evaluation, self-play and Monte Carlo tree search
+- [The study](https://github.com/raskell-io/kishi/blob/main/docs/study/README.md): questions, experiments and rules
+- [The notebook](https://github.com/raskell-io/kishi/blob/main/docs/study/notebook.md): every experiment, including the ones that failed
+- [Strength](https://github.com/raskell-io/kishi/blob/main/docs/strength.md)
